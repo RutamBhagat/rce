@@ -104,11 +104,9 @@ app.get("/consent/:uid", async (req, res, next) => {
     const details = await oauth.interactionDetails(req, res);
     const parsed = authorizationParams.safeParse(details.params);
     if (!parsed.success) return void res.status(400).send("Invalid authorization request.");
-    const { client_id: clientId, redirect_uri: redirectUri, resource: requestedResource, scope } = parsed.data;
+    const { client_id: clientId, redirect_uri: redirectUri } = parsed.data;
     const client = await oauth.Client.find(clientId);
-    if (!client?.redirectUriAllowed(redirectUri) || requestedResource !== resource.href || scope !== SCOPE) {
-      return void res.status(400).send("Invalid authorization request.");
-    }
+    if (!client) return void res.status(400).send("Invalid authorization request.");
 
     res
       .set(consentHeaders)
