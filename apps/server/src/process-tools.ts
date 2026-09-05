@@ -9,6 +9,14 @@ type Workspace = { workspace_id: string; label: string };
 type Pane = { pane_id: string; workspace_id: string; label?: string };
 type LaunchFingerprint = { digest: string; length: number };
 type WaitOutputResult = { matched_line?: string };
+type ForegroundProcess = { pid: number };
+type ProcessInfo = {
+  pane_id: string;
+  shell_pid: number;
+  foreground_process_group_id: number;
+  foreground_processes: ForegroundProcess[];
+};
+type ProcessInfoResult = { process_info: ProcessInfo; type?: string };
 const label = `rce-${createHash("sha256").update(JSON.stringify([ROOT, env.RCE_ORIGIN])).digest("hex")}`;
 const controlLabel = "rce-control";
 const launchFingerprints = new Map<string, LaunchFingerprint>();
@@ -71,17 +79,19 @@ export function registerProcessTools(server: McpServer) {
     }
   });
 
-  for (const operation of ["read", "stop", "wait", "send"] as const) {
+  for (const operation of ["read", "info", "stop", "wait", "send"] as const) {
     server.registerTool(`process_${operation}`, {
       description: operation === "read"
-        ? "Read recent process output without terminal wrapping. Defaults to the last 80 terminal rows."
-        : operation === "stop"
-          ? "Stop a process by closing its pane. Close its RCE workspace when no child panes remain."
-          : operation === "wait"
-            ? "Search current recent unwrapped output immediately, then wait for a literal substring or Rust regex. Existing output is eligible, but a match against the echoed process_start command is rejected. Timeout is in milliseconds. Omit timeout to wait indefinitely. Specify exactly one of match or regex."
-            : "Send literal text without Enter, or an ordered array of terminal keys/chords such as Enter and ctrl+c. Specify exactly one of text or keys.",
+        ? "Read process terminal output. Source defaults to recent-unwrapped; visible is useful for interactive TUIs, recent-unwrapped for logs/transcripts, and detection for Herdr's agent-detection snapshot. Defaults to the last 80 terminal rows."
+        : operation === "info"
+          ? "Read a structured Herdr process-state snapshot for a process pane, including shell PID, foreground process group, foreground processes, and a derived idle flag. idle means the pane shell is foreground at this instant; it is not a completion event."
+          : operation === "stop"
+            ? "Stop a process by closing its pane. Close its RCE workspace when no child panes remain."
+            : operation === "wait"
+              ? "Search current recent unwrapped output immediately, then wait for a literal substring or Rust regex. Existing output is eligible, but a match against the echoed process_start command is rejected. Timeout is in milliseconds. Omit timeout to wait indefinitely. Specify exactly one of match or regex."
+              : "Send literal text without Enter, or an ordered array of terminal keys/chords such as Enter and ctrl+c. Specify exactly one of text or keys.",
       inputSchema: fromJsonSchema<ProcessArgs>(processSchemas[operation] as JsonSchemaType),
-    }, async ({ handle, lines, match, regex, timeout, text, keys }, ctx) => {
+    }, async ({ handle, lines, source, match, regex, timeout, text, keys }, ctx) => {
       const request = pending.then(async () => {
         const { workspaces } = await herdr<{ workspaces: Workspace[] }>(["workspace", "list"]);
         const matches = workspaces.filter((workspace) => workspace.label === label);
@@ -124,9 +134,16 @@ export function registerProcessTools(server: McpServer) {
           return { content: [{ type: "text" as const, text: `Sent input to process ${handle}.` }] };
         }
         if (operation === "read") {
-          const output = await herdr<string>(["pane", "read", handle, "--source", "recent-unwrapped",
+          const output = await herdr<string>(["pane", "read", handle, "--source", source ?? "recent-unwrapped",
             ...(lines === undefined ? [] : ["--lines", String(lines)])]);
           return { content: [{ type: "text" as const, text: output }] };
+        }
+        if (operation === "info") {
+          const result = await herdr<ProcessInfoResult>(["pane", "process-info", "--pane", handle]);
+          const info = result.process_info;
+          const idle = info.foreground_process_group_id === info.shell_pid
+            && info.foreground_processes.every((process) => process.pid === info.shell_pid);
+          return { content: [{ type: "text" as const, text: JSON.stringify({ ...result, idle }) }] };
         }
         await herdr(["pane", "close", handle]);
         launchFingerprints.delete(handle);
