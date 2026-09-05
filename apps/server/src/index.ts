@@ -1,25 +1,13 @@
-import { cors } from "@elysiajs/cors";
-import { auth } from "@rce/auth";
-import { env } from "@rce/env/server";
-import { Elysia } from "elysia";
+#!/usr/bin/env bun
+import { ROOT } from "./root";
+
+const { Elysia } = await import("elysia");
+const { mcp } = await import("./mcp");
 
 new Elysia()
-  .use(
-    cors({
-      origin: env.CORS_ORIGIN,
-      methods: ["GET", "POST", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization"],
-      credentials: true,
-    }),
-  )
-  .all("/api/auth/*", async (context) => {
-    const { request, status } = context;
-    if (["POST", "GET"].includes(request.method)) {
-      return auth.handler(request);
-    }
-    return status(405);
-  })
   .get("/", () => "OK")
-  .listen(3000, () => {
-    console.log("Server is running on http://localhost:3000");
+  .all("/mcp", ({ request }) => mcp.fetch(request))
+  // Temporary local proof. Replace with OAuth before remote use.
+  .listen({ hostname: "127.0.0.1", port: Number(process.env.PORT ?? 3000) }, (server) => {
+    console.log(`RCE serves ${ROOT} at http://127.0.0.1:${server.port}/mcp`);
   });

@@ -11,13 +11,15 @@
   },
   "dependencies": {
     "@elysiajs/cors": "^1.4.2",
+    "@mariozechner/pi-coding-agent": "0.73.1",
+    "@modelcontextprotocol/server": "2.0.0",
     "@rce/auth": "workspace:*",
     "@rce/db": "workspace:*",
     "@rce/env": "workspace:*",
     "@sinclair/typebox": "^0.34.52",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
-    "elysia": "^1.4.29",
+    "elysia": "1.4.29",
     "libsql": "catalog:",
     "zod": "catalog:"
   },
