@@ -1,8 +1,8 @@
-import { createEditTool, createFindTool, createGrepTool, createLsTool, createReadTool, createWriteTool, type createCodingTools } from "@earendil-works/pi-coding-agent";
+import { createBashTool, createEditTool, createFindTool, createGrepTool, createLsTool, createReadTool, createWriteTool, type createCodingTools } from "@earendil-works/pi-coding-agent";
 import { fromJsonSchema, type McpServer } from "@modelcontextprotocol/server";
 import { ROOT } from "./root.ts";
 
-const tools: ReturnType<typeof createCodingTools> = [createReadTool(ROOT), createLsTool(ROOT), createFindTool(ROOT), createGrepTool(ROOT), createWriteTool(ROOT), createEditTool(ROOT)];
+const tools: ReturnType<typeof createCodingTools> = [createReadTool(ROOT), createLsTool(ROOT), createFindTool(ROOT), createGrepTool(ROOT), createWriteTool(ROOT), createEditTool(ROOT), createBashTool(ROOT)];
 
 export function registerPiTools(server: McpServer) {
   for (const tool of tools) {
