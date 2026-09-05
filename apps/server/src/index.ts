@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { createMcpExpressApp } from "@modelcontextprotocol/express";
 import { toNodeHandler } from "@modelcontextprotocol/node";
 import { env } from "@rce/env/server";
 import express from "express";
@@ -21,6 +22,7 @@ import { authorizationParams } from "./schemas.ts";
 const SCOPE = "mcp:tools";
 const issuer = new URL(env.RCE_ORIGIN);
 const resource = new URL("/mcp", issuer);
+const allowedHostnames = [issuer.hostname, "localhost", "127.0.0.1", "[::1]"];
 const approvalCode = randomBytes(32).toString("hex").slice(0, 12).toUpperCase().match(/.{4}/g)!.join("-");
 const invalidAuthorization: ErrorRequestHandler = (_errors, _req, res) => {
   res.status(400).send("Invalid authorization request.");
@@ -46,7 +48,7 @@ const sameOrigin: WeakRequestHandler = (req, res, next) => {
   next();
 };
 
-const app = express();
+const app = createMcpExpressApp({ allowedHosts: allowedHostnames, allowedOrigins: allowedHostnames });
 app.use(mcpAuthRouter({
   provider: oauth,
   resourceServerUrl: resource,
@@ -100,7 +102,6 @@ app.get("/", (_req, res) => void res.send("OK"));
 const nodeMcp = toNodeHandler(mcp);
 app.post(
   "/mcp",
-  express.json(),
   requireBearerAuth({
     verifier: oauth,
     requiredScopes: [SCOPE],
