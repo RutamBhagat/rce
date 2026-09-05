@@ -52,7 +52,7 @@ const oauth = new Provider(issuer.href, {
   pkce: { required: () => true },
   responseTypes: ["code"],
   routes: { authorization: "/authorize", revocation: "/revoke", token: "/token" },
-  scopes: [],
+  scopes: ["offline_access"],
   ttl: {
     AccessToken: 8 * 60 * 60,
     AuthorizationCode: 5 * 60,
@@ -130,8 +130,10 @@ app.post("/consent/:uid/approve", sameOrigin, async (req, res, next) => {
     const clientId = details.params.client_id;
     if (typeof clientId !== "string") return void res.status(400).send("Invalid authorization request.");
     const grant = new oauth.Grant({ clientId, accountId: "owner" });
-    if (typeof details.params.scope === "string" && details.params.scope.split(" ").includes("openid")) {
-      grant.addOIDCScope("openid");
+    if (typeof details.params.scope === "string") {
+      const requestedScopes = details.params.scope.split(" ");
+      if (requestedScopes.includes("openid")) grant.addOIDCScope("openid");
+      if (requestedScopes.includes("offline_access")) grant.addOIDCScope("offline_access");
     }
     grant.addResourceScope(resource.href, SCOPE);
     const grantId = await grant.save();

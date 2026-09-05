@@ -20,12 +20,12 @@ Each launch creates a fresh in-memory OAuth server and prints an approval code.
 When an MCP client opens the authorization page, confirm that its code matches the terminal and approve it.
 Stopping RCE invalidates every access token issued by that process.
 Clients must support MCP `2026-07-28`, CIMD, and S256 PKCE and request the `mcp:tools` scope.
-RCE does not issue refresh tokens.
+RCE supports `offline_access` refresh tokens for clients that request them.
 
 Set `RCE_ORIGIN` to the origin that the client uses.
 For remote access, use a public HTTPS origin and forward it to the loopback listener.
 Set `PORT` to change the listener port. The public origin and port are separate settings.
-RCE stores no authorization state on disk. Authorization codes and opaque access tokens exist only for the lifetime of the process.
+RCE stores no authorization state on disk. Authorization codes, access tokens, and refresh tokens exist only for the lifetime of the process.
 
 ```sh
 bun run dev:server
