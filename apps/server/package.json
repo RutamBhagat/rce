@@ -9,7 +9,7 @@
     "start": "bun dist/index.mjs"
   },
   "dependencies": {
-    "@mariozechner/pi-coding-agent": "0.73.1",
+    "@earendil-works/pi-coding-agent": "0.84.4",
     "@modelcontextprotocol/node": "2.0.0",
     "@modelcontextprotocol/server": "2.0.0",
     "@remix-run/html-template": "0.3.1",
