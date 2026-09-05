@@ -16,7 +16,7 @@ export function registerProcessTools(server: McpServer) {
     description: "Start a persistent shell command in the invocation directory. Return its Herdr pane ID as the process handle.",
     inputSchema: z.object({ command: z.string().refine((value) => value.trim().length > 0, "Command must not be empty.") }),
   }, async ({ command }) => {
-    // Serialize creation so concurrent requests cannot create duplicate workspaces.
+    // Serialize operations so workspace creation and cleanup cannot overlap.
     const start = pending.then(async () => {
       const { workspaces } = await herdr<{ workspaces: Workspace[] }>("workspace", "list");
       const matches = workspaces.filter((workspace) => workspace.label === label);
@@ -57,4 +57,45 @@ export function registerProcessTools(server: McpServer) {
       return { isError: true, content: [{ type: "text" as const, text: error instanceof Error ? error.message : String(error) }] };
     }
   });
+
+  for (const operation of ["read", "stop"] as const) {
+    server.registerTool(`process_${operation}`, {
+      description: operation === "read"
+        ? "Read recent process output without terminal wrapping. Defaults to the last 80 terminal rows."
+        : "Stop a process by closing its pane. Close its RCE workspace when no child panes remain.",
+      inputSchema: z.object({
+        handle: z.string().min(1),
+        ...(operation === "read" ? { lines: z.number().int().positive().optional() } : {}),
+      }),
+    }, async ({ handle, lines }) => {
+      const request = pending.then(async () => {
+        const { workspaces } = await herdr<{ workspaces: Workspace[] }>("workspace", "list");
+        const matches = workspaces.filter((workspace) => workspace.label === label);
+        if (matches.length > 1) throw new Error("Multiple RCE workspaces have the same label.");
+        const workspace = matches[0];
+        if (!workspace) throw new Error("Unknown, closed, or foreign process handle.");
+        const { panes } = await herdr<{ panes: Pane[] }>("pane", "list", "--workspace", workspace.workspace_id);
+        const pane = panes.find((pane) => pane.pane_id === handle && pane.workspace_id === workspace.workspace_id);
+        if (!pane) throw new Error("Unknown, closed, or foreign process handle.");
+        if (pane.label === controlLabel) throw new Error("The control pane is not a process handle.");
+        if (operation === "read") {
+          const output = await herdr<string>("pane", "read", handle, "--source", "recent-unwrapped",
+            ...(lines === undefined ? [] : ["--lines", String(lines)]));
+          return { content: [{ type: "text" as const, text: output }] };
+        }
+        await herdr("pane", "close", handle);
+        const remaining = await herdr<{ panes: Pane[] }>("pane", "list", "--workspace", workspace.workspace_id);
+        if (remaining.panes.every((pane) => pane.label === controlLabel)) {
+          await herdr("workspace", "close", workspace.workspace_id);
+        }
+        return { content: [{ type: "text" as const, text: `Stopped process ${handle}.` }] };
+      });
+      pending = request.catch(() => {});
+      try {
+        return await request;
+      } catch (error) {
+        return { isError: true, content: [{ type: "text" as const, text: error instanceof Error ? error.message : String(error) }] };
+      }
+    });
+  }
 }

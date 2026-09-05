@@ -5,6 +5,7 @@ const exec = promisify(execFile);
 
 export async function herdr<T>(...args: string[]): Promise<T> {
   const { stdout } = await exec("herdr", args, { maxBuffer: 4 * 1024 * 1024 });
+  if (args[0] === "pane" && args[1] === "read") return stdout as T;
   const response = stdout.trim() ? JSON.parse(stdout) : {};
   if (response.error) throw new Error(response.error.message);
   return response.result;
