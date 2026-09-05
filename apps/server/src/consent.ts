@@ -13,6 +13,7 @@ type ConsentPageProps = {
   directory: string;
   redirectUri: string;
   approvalCode: string;
+  action: string;
   fields: ReadonlyArray<readonly [string, string]>;
 };
 
@@ -25,6 +26,7 @@ export function consentPage({
   directory,
   redirectUri,
   approvalCode,
+  action,
   fields,
 }: ConsentPageProps): SafeHtml {
   return html`<!doctype html>
@@ -43,8 +45,8 @@ export function consentPage({
         </p>
         <form method="post">
           ${fields.map(([name, value]) => hiddenField(name, value))}
-          <button formaction="/consent/approve">Authorize</button>
-          <button formaction="/consent/deny">Deny</button>
+          <button formaction="${action}/approve">Authorize</button>
+          <button formaction="${action}/deny">Deny</button>
         </form>
       </main>
     </html>`;

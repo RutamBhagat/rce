@@ -5,8 +5,8 @@
   "scripts": {
     "build": "tsdown",
     "check-types": "tsc -b",
-    "dev": "bun --watch src/index.ts",
-    "start": "bun dist/index.mjs"
+    "dev": "node --watch src/index.ts",
+    "start": "node dist/index.mjs"
   },
   "dependencies": {
     "@earendil-works/pi-coding-agent": "0.84.4",
@@ -17,14 +17,12 @@
     "@rce/env": "workspace:*",
     "dotenv": "catalog:",
     "express": "5.2.1",
-    "express-rate-limit": "8.7.0",
-    "express-zod-safe": "3.2.1",
-    "ipaddr.js": "2.5.0",
-    "mcp-oauth-server": "1.0.0",
+    "oidc-provider": "9.12.1",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@rce/config": "workspace:*",
+    "@types/oidc-provider": "9.12.0",
     "@types/express": "5.0.6",
     "tsdown": "^0.22.14",
     "typescript": "catalog:"

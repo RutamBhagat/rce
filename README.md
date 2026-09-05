@@ -2,7 +2,7 @@
 
 RCE exposes Pi's `read` tool through an OAuth-protected MCP endpoint.
 It uses the canonical directory from which you start `rce`.
-RCE runs on Bun.
+RCE runs on Node.js. Bun is used for package management and workspace scripts.
 
 ```sh
 bun install
@@ -15,7 +15,7 @@ From the directory you want to read:
 rce
 ```
 
-The temporary local-development endpoint is `http://127.0.0.1:3000/mcp`.
+The temporary local-development endpoint is `http://127.0.0.1:6767/mcp`.
 Each launch creates a fresh in-memory OAuth server and prints an approval code.
 When an MCP client opens the authorization page, confirm that its code matches the terminal and approve it.
 Stopping RCE invalidates every access token issued by that process.

@@ -10,7 +10,7 @@
       "dotenv": "^17.4.2",
       "zod": "^4.4.3",
       "typescript": "^6.0.3",
-      "@types/bun": "^1.4.0"
+      "@types/node": "^24.13.3"
     }
   },
   "type": "module",
@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "@rce/config": "workspace:*",
-    "@types/bun": "catalog:",
+    "@types/node": "catalog:",
     "typescript": "catalog:"
   },
   "packageManager": "bun@1.4.0",
