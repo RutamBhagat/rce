@@ -1,13 +1,18 @@
 import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
-import { spawnSync } from "node:child_process";
-import { registerPiTools } from "./pi-tools.ts";
-import { registerProcessTools } from "./process-tools.ts";
+import { PiService } from "./services/pi.ts";
+import { ProcessManager } from "./services/process-manager.ts";
+import { ROOT } from "./root.ts";
+import { registerTools } from "./tools/index.ts";
+import type { ToolContext } from "./tools/types.ts";
 
-const hasHerdr = spawnSync("herdr", ["--version"]).status === 0;
+const context: ToolContext = {
+  root: ROOT,
+  pi: new PiService(ROOT),
+  processes: ProcessManager.create(ROOT),
+};
 
 export const mcp = createMcpHandler(() => {
   const server = new McpServer({ name: "rce", version: "0.1.0" });
-  if (hasHerdr) registerProcessTools(server);
-  registerPiTools(server);
+  registerTools(server, context);
   return server;
 }, { legacy: "reject" });
