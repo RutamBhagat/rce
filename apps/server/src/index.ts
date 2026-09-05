@@ -16,6 +16,8 @@ const resource = new URL("/mcp", issuer);
 const resourceMetadata = new URL("/.well-known/oauth-protected-resource/mcp", issuer);
 const allowedHostnames = [issuer.hostname, "localhost", "127.0.0.1", "[::1]"];
 const approvalCode = randomBytes(32).toString("hex").slice(0, 12).toUpperCase().match(/.{4}/g)!.join("-");
+const trace = (event: string, details: Record<string, unknown> = {}) =>
+  console.log(`[oauth] ${event}`, details);
 const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
 const signingKey = Object.assign(privateKey.export({ format: "jwk" }), {
   alg: "RS256",
@@ -63,6 +65,63 @@ const oauth = new Provider(issuer.href, {
 });
 oauth.proxy = true;
 
+oauth.on("authorization.accepted", (ctx) => {
+  const params = ctx.oidc.params;
+  trace("authorization.accepted", {
+    client_id: params?.client_id,
+    redirect_uri: params?.redirect_uri,
+    response_type: params?.response_type,
+    scope: params?.scope,
+    resource: params?.resource,
+    prompt: params?.prompt,
+    code_challenge_method: params?.code_challenge_method,
+    state: params?.state !== undefined,
+  });
+});
+oauth.on("interaction.started", (ctx, prompt) => trace("interaction.started", {
+  client_id: ctx.oidc.params?.client_id,
+  prompt: prompt.name,
+  reasons: prompt.reasons,
+  scope: ctx.oidc.params?.scope,
+  resource: ctx.oidc.params?.resource,
+}));
+oauth.on("interaction.ended", (ctx) => trace("interaction.ended", {
+  client_id: ctx.oidc.params?.client_id,
+}));
+oauth.on("authorization.success", (ctx) => trace("authorization.success", {
+  client_id: ctx.oidc.params?.client_id,
+}));
+oauth.on("authorization.error", (ctx, error) => trace("authorization.error", {
+  client_id: ctx.oidc.params?.client_id,
+  error: error.error ?? error.name,
+  description: error.error_description ?? error.message,
+}));
+oauth.on("grant.success", (ctx) => trace("grant.success", {
+  grant_type: ctx.oidc.params?.grant_type,
+  client_id: ctx.oidc.client?.clientId,
+  client_auth: ctx.oidc.client?.clientAuthMethod,
+  scope: ctx.oidc.params?.scope,
+  resource: ctx.oidc.params?.resource,
+  client_assertion: ctx.oidc.params?.client_assertion !== undefined,
+}));
+oauth.on("grant.error", (ctx, error) => trace("grant.error", {
+  grant_type: ctx.oidc.params?.grant_type,
+  client_id: ctx.oidc.client?.clientId,
+  client_auth: ctx.oidc.client?.clientAuthMethod,
+  error: error.error ?? error.name,
+  description: error.error_description ?? error.message,
+  client_assertion: ctx.oidc.params?.client_assertion !== undefined,
+}));
+oauth.on("authorization_code.saved", () => trace("authorization_code.saved"));
+oauth.on("authorization_code.consumed", () => trace("authorization_code.consumed"));
+oauth.on("access_token.saved", () => trace("access_token.saved"));
+oauth.on("refresh_token.saved", () => trace("refresh_token.saved"));
+oauth.on("refresh_token.consumed", () => trace("refresh_token.consumed"));
+oauth.on("server_error", (_ctx, error) => trace("server_error", {
+  error: error.name,
+  description: error.message,
+}));
+
 const sameOrigin: RequestHandler = (req, res, next) => {
   if (req.get("origin") !== issuer.origin) {
     res.sendStatus(403);
@@ -80,17 +139,41 @@ const requireMcpAuth: RequestHandler = async (req, res, next) => {
     ? audience === resource.href
     : Array.isArray(audience) && audience.includes(resource.href);
   if (!token || !token.scopes.has(SCOPE) || !validAudience) {
+    console.log("[mcp] auth.rejected", {
+      token_found: Boolean(token),
+      scope_ok: Boolean(token?.scopes.has(SCOPE)),
+      audience_ok: validAudience,
+    });
     res
       .set("WWW-Authenticate", `Bearer resource_metadata="${resourceMetadata.href}", scope="${SCOPE}"`)
       .status(401)
       .json({ error: "invalid_token" });
     return;
   }
+  console.log("[mcp] auth.accepted");
   next();
 };
 
 const app = createMcpExpressApp({ allowedHosts: allowedHostnames, allowedOrigins: allowedHostnames });
 app.set("trust proxy", "loopback");
+
+app.use((req, res, next) => {
+  const path = req.path
+    .replace(/^\/consent\/[^/]+/, "/consent/:uid")
+    .replace(/^\/authorize\/[^/]+/, "/authorize/:uid");
+  if (path === "/authorize" || path.startsWith("/authorize/") || path.startsWith("/consent/") ||
+      path === "/token" || path === "/mcp" || path.startsWith("/.well-known/")) {
+    const started = Date.now();
+    res.on("finish", () => console.log("[http]", {
+      method: req.method,
+      path,
+      status: res.statusCode,
+      ms: Date.now() - started,
+      origin: req.get("origin") ?? null,
+    }));
+  }
+  next();
+});
 
 app.get(resourceMetadata.pathname, (_req, res) => void res.json({
   resource: resource.href,
@@ -129,6 +212,12 @@ app.post("/consent/:uid/approve", sameOrigin, async (req, res, next) => {
     const details = await oauth.interactionDetails(req, res);
     const clientId = details.params.client_id;
     if (typeof clientId !== "string") return void res.status(400).send("Invalid authorization request.");
+    trace("consent.approve", {
+      client_id: clientId,
+      scope: details.params.scope,
+      resource: details.params.resource,
+      prompt: details.params.prompt,
+    });
     const grant = new oauth.Grant({ clientId, accountId: "owner" });
     if (typeof details.params.scope === "string") {
       const requestedScopes = details.params.scope.split(" ");
