@@ -1,69 +1,36 @@
-# rce
+# RCE
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Elysia, and more.
+RCE exposes Pi's `read` tool through an OAuth-protected MCP endpoint.
+It uses the canonical directory from which you start `rce`.
+RCE runs on Bun.
 
-## Features
-
-- **TypeScript** - For type safety and improved developer experience
-- **Elysia** - Type-safe, high-performance framework
-- **Bun** - Runtime environment
-- **Drizzle** - TypeScript-first ORM
-- **SQLite/Turso** - Database engine
-- **Authentication** - Better-Auth
-
-## Getting Started
-
-First, install the dependencies:
-
-```bash
+```sh
 bun install
+bun link
 ```
 
-## Database Setup
+From the directory you want to read:
 
-This project uses SQLite with Drizzle ORM.
-
-1. Start the local SQLite database (optional):
-
-```bash
-bun run db:local
+```sh
+rce
 ```
 
-2. Update your `.env` file in the `apps/server` directory with the appropriate connection details if needed.
+The default endpoint is `http://127.0.0.1:7676/mcp`.
+Each launch creates a fresh in-memory OAuth server and prints an approval code.
+When an MCP client opens the authorization page, confirm that its code matches the terminal and approve it.
+Stopping RCE invalidates every access token issued by that process.
+Clients must support MCP `2026-07-28`, CIMD, and S256 PKCE and request the `mcp:tools` scope.
+RCE does not issue refresh tokens.
 
-3. Apply the schema to your database:
+Set `RCE_ORIGIN` to the origin that the client uses.
+For remote access, use a public HTTPS origin and forward it to the loopback listener.
+Set `PORT` to change the listener port. The public origin and port are separate settings.
+RCE stores no authorization state on disk. Authorization codes and opaque access tokens exist only for the lifetime of the process.
 
-```bash
-bun run db:push
+```sh
+bun run dev:server
+bun run check-types
+bun run build
 ```
 
-Then, run the development server:
-
-```bash
-bun run dev
-```
-
-The API is running at [http://localhost:3000](http://localhost:3000).
-
-## Project Structure
-
-```
-rce/
-├── apps/
-│   └── server/      # Backend API (Elysia)
-├── packages/
-│   ├── auth/        # Authentication configuration & logic
-│   └── db/          # Database schema & queries
-```
-
-## Available Scripts
-
-- `bun run dev`: Start all applications in development mode
-- `bun run build`: Build all applications
-- `bun run dev:server`: Start only the server
-- `bun run check-types`: Check TypeScript types across all apps
-- `bun run db:push`: Push schema changes to database
-- `bun run db:generate`: Generate database client/types
-- `bun run db:migrate`: Run database migrations
-- `bun run db:studio`: Open database studio UI
-- `bun run db:local`: Start the local SQLite database
+The built executable is `apps/server/dist/index.mjs`.

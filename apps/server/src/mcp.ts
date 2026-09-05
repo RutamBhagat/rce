@@ -1,6 +1,6 @@
 import { createReadTool } from "@mariozechner/pi-coding-agent";
 import { createMcpHandler, fromJsonSchema, McpServer } from "@modelcontextprotocol/server";
-import { ROOT } from "./root";
+import { ROOT } from "./root.ts";
 
 const read = createReadTool(ROOT);
 

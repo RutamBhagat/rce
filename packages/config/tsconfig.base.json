@@ -4,6 +4,7 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "rewriteRelativeImportExtensions": true,
     "lib": ["ESNext"],
     "verbatimModuleSyntax": true,
     "strict": true,
