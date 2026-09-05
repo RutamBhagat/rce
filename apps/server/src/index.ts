@@ -19,8 +19,7 @@ const protectedMcp = requireMcpAuth(auth, (request) => mcp.fetch(request), {
 });
 
 new Elysia({ adapter: node() })
-  .onRequest(({ request }) =>
-    hostHeaderValidationResponse(request, allowedHostnames) ?? originValidationResponse(request, allowedHostnames))
+  .onRequest(({ request }) => hostHeaderValidationResponse(request, allowedHostnames))
   .get("/", () => "OK")
   .get("/login", ({ request, status }) => {
     const oauthQuery = new URL(request.url).search.slice(1);
@@ -28,7 +27,10 @@ new Elysia({ adapter: node() })
     const headers = new Headers(request.headers);
     headers.set("Accept", "text/html");
     headers.set("Content-Type", "application/json");
+    headers.set("Origin", issuer.origin);
+    headers.set("Referer", issuer.href);
     headers.set("Sec-Fetch-Mode", "navigate");
+    headers.set("Sec-Fetch-Site", "same-origin");
     return auth.handler(new Request(new URL("/sign-in/anonymous", issuer).href, {
       method: "POST",
       headers,
@@ -59,7 +61,8 @@ new Elysia({ adapter: node() })
     body: consentBody,
     params: t.Object({ decision: t.Union([t.Literal("approve"), t.Literal("deny")]) }),
   })
-  .post("/mcp", ({ request }) => protectedMcp(request))
+  .post("/mcp", ({ request }) =>
+    originValidationResponse(request, allowedHostnames) ?? protectedMcp(request))
   .all("/mcp", ({ set, status }) => {
     set.headers.Allow = "POST";
     return status(405);
