@@ -3,7 +3,7 @@ import { html, type SafeHtml } from "@remix-run/html-template";
 export const consentHeaders = {
   "Cache-Control": "no-store",
   "Content-Security-Policy":
-    "default-src 'none'; form-action 'self'; frame-ancestors 'none'",
+    "default-src 'none'; form-action 'self' https://chatgpt.com; frame-ancestors 'none'",
   "Referrer-Policy": "same-origin",
   "X-Content-Type-Options": "nosniff",
 };

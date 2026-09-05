@@ -24,12 +24,14 @@ new Elysia({ adapter: node() })
   .onRequest(({ request }) => {
     started.set(request, performance.now());
     const url = new URL(request.url);
+    const referer = request.headers.get("referer");
+    const refererUrl = referer && URL.canParse(referer) ? new URL(referer) : undefined;
     log.info({
       component: "http",
       method: request.method,
       path: url.pathname,
       origin: request.headers.get("origin") ?? undefined,
-      referer: request.headers.get("referer") ?? undefined,
+      referer: refererUrl ? `${refererUrl.origin}${refererUrl.pathname}` : undefined,
     }, "http.request");
     return hostHeaderValidationResponse(request, allowedHostnames);
   })
