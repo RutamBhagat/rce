@@ -30,6 +30,9 @@
     "@types/node": "catalog:",
     "typescript": "catalog:"
   },
+  "patchedDependencies": {
+    "@better-auth/cimd@1.7.2": "patches/@better-auth%2Fcimd@1.7.2.patch"
+  },
   "packageManager": "bun@1.4.0",
   "bin": {
     "rce": "apps/server/src/index.ts"

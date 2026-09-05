@@ -10,18 +10,20 @@
   },
   "dependencies": {
     "@earendil-works/pi-coding-agent": "0.84.4",
+    "@better-auth/cimd": "1.7.2",
+    "@better-auth/mcp": "1.7.2",
+    "@better-auth/memory-adapter": "1.7.2",
+    "@better-auth/oauth-provider": "1.7.2",
     "@elysia/node": "1.4.6",
-    "@modelcontextprotocol/node": "2.0.0",
     "@modelcontextprotocol/server": "2.0.0",
     "@remix-run/html-template": "0.3.1",
     "@rce/env": "workspace:*",
+    "better-auth": "1.7.2",
     "dotenv": "catalog:",
-    "elysia": "1.4.30",
-    "oidc-provider": "9.12.1"
+    "elysia": "1.4.30"
   },
   "devDependencies": {
     "@rce/config": "workspace:*",
-    "@types/oidc-provider": "9.12.0",
     "tsdown": "^0.22.14",
     "typescript": "catalog:"
   }
