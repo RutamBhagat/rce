@@ -1,0 +1,41 @@
+{
+  "name": "rce",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*"
+    ],
+    "catalog": {
+      "dotenv": "^17.4.2",
+      "zod": "^4.4.3",
+      "typescript": "^6.0.3",
+      "@types/bun": "^1.4.0",
+      "libsql": "0.5.29",
+      "better-auth": "1.7.1"
+    }
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --filter '*' dev",
+    "build": "bun run --filter '*' build",
+    "check-types": "bun run --filter '*' check-types",
+    "dev:server": "bun run --filter server dev",
+    "db:push": "bun run --filter @rce/db db:push",
+    "db:studio": "bun run --filter @rce/db db:studio",
+    "db:generate": "bun run --filter @rce/db db:generate",
+    "db:migrate": "bun run --filter @rce/db db:migrate",
+    "db:local": "bun run --filter @rce/db db:local"
+  },
+  "dependencies": {
+    "@rce/env": "workspace:*",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@rce/config": "workspace:*",
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  },
+  "packageManager": "bun@1.4.0"
+}
