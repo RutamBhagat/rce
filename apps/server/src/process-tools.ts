@@ -1,8 +1,8 @@
-import type { McpServer } from "@modelcontextprotocol/server";
+import { fromJsonSchema, type JsonSchemaType, type McpServer } from "@modelcontextprotocol/server";
 import { env } from "@rce/env/server";
 import { createHash } from "node:crypto";
-import { z } from "zod";
 import { herdr } from "./herdr.ts";
+import { processSchemas, processStartSchema, type ProcessArgs } from "./process-schemas.ts";
 import { ROOT } from "./root.ts";
 
 type Workspace = { workspace_id: string; label: string };
@@ -14,7 +14,7 @@ let pending: Promise<unknown> = Promise.resolve();
 export function registerProcessTools(server: McpServer) {
   server.registerTool("process_start", {
     description: "Start a persistent shell command in the invocation directory. Return its Herdr pane ID as the process handle.",
-    inputSchema: z.object({ command: z.string().refine((value) => value.trim().length > 0, "Command must not be empty.") }),
+    inputSchema: fromJsonSchema<{ command: string }>(processStartSchema as JsonSchemaType),
   }, async ({ command }) => {
     // Serialize operations so workspace creation and cleanup cannot overlap.
     const start = pending.then(async () => {
@@ -59,23 +59,6 @@ export function registerProcessTools(server: McpServer) {
   });
 
   for (const operation of ["read", "stop", "wait", "send"] as const) {
-    const inputSchema = z.object({
-      handle: z.string().min(1),
-      lines: z.number().int().positive().optional(),
-      match: z.string().min(1).optional(),
-      regex: z.string().min(1).optional(),
-      timeout: z.number().int().nonnegative().optional(),
-      text: z.string().optional(),
-      keys: z.array(z.string().min(1)).min(1).optional(),
-    }).pick({
-      handle: true,
-      ...((operation === "read" || operation === "wait") ? { lines: true as const } : {}),
-      ...(operation === "wait" ? { match: true as const, regex: true as const, timeout: true as const } : {}),
-      ...(operation === "send" ? { text: true as const, keys: true as const } : {}),
-    }).refine((args) => operation !== "wait" || (args.match !== undefined) !== (args.regex !== undefined),
-      "Specify exactly one of match or regex.")
-      .refine((args) => operation !== "send" || (args.text !== undefined) !== (args.keys !== undefined),
-        "Specify exactly one of text or keys.");
     server.registerTool(`process_${operation}`, {
       description: operation === "read"
         ? "Read recent process output without terminal wrapping. Defaults to the last 80 terminal rows."
@@ -84,7 +67,7 @@ export function registerProcessTools(server: McpServer) {
           : operation === "wait"
             ? "Wait for a literal substring or Rust regex in recent unwrapped output. Timeout is in milliseconds. Omit timeout to wait indefinitely. Specify exactly one of match or regex."
             : "Send literal text without Enter, or an ordered array of terminal keys/chords such as Enter and ctrl+c. Specify exactly one of text or keys.",
-      inputSchema,
+      inputSchema: fromJsonSchema<ProcessArgs>(processSchemas[operation] as JsonSchemaType),
     }, async ({ handle, lines, match, regex, timeout, text, keys }, ctx) => {
       const request = pending.then(async () => {
         const { workspaces } = await herdr<{ workspaces: Workspace[] }>(["workspace", "list"]);
