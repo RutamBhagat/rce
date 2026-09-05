@@ -15,7 +15,7 @@ From the directory you want to read:
 rce
 ```
 
-The default endpoint is `http://127.0.0.1:7676/mcp`.
+The temporary local-development endpoint is `http://127.0.0.1:3000/mcp`.
 Each launch creates a fresh in-memory OAuth server and prints an approval code.
 When an MCP client opens the authorization page, confirm that its code matches the terminal and approve it.
 Stopping RCE invalidates every access token issued by that process.
