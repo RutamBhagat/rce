@@ -130,6 +130,9 @@ app.post("/consent/:uid/approve", sameOrigin, async (req, res, next) => {
     const clientId = details.params.client_id;
     if (typeof clientId !== "string") return void res.status(400).send("Invalid authorization request.");
     const grant = new oauth.Grant({ clientId, accountId: "owner" });
+    if (typeof details.params.scope === "string" && details.params.scope.split(" ").includes("openid")) {
+      grant.addOIDCScope("openid");
+    }
     grant.addResourceScope(resource.href, SCOPE);
     const grantId = await grant.save();
     await oauth.interactionFinished(req, res, { login: { accountId: "owner" }, consent: { grantId } });
