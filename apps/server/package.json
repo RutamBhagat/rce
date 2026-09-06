@@ -1,7 +1,7 @@
 {
   "name": "rce-mcp",
   "version": "0.1.0",
-  "description": "Expose the current local project through an OAuth-protected MCP coding server.",
+  "description": "Run rce in a project to expose OAuth-protected MCP coding tools for ChatGPT over a stable HTTPS tunnel.",
   "type": "module",
   "bin": {
     "rce": "dist/index.mjs"
