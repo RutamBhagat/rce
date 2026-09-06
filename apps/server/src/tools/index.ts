@@ -3,6 +3,7 @@ import { applyPatchTool } from "./apply-patch.ts";
 import { bashTool } from "./bash.ts";
 import { findTool } from "./find.ts";
 import { grepTool } from "./grep.ts";
+import { listSkillsTool } from "./list-skills.ts";
 import { loadSkillTool } from "./load-skill.ts";
 import { lsTool } from "./ls.ts";
 import { processInfoTool } from "./process-info.ts";
@@ -16,6 +17,7 @@ import type { ToolContext, ToolPlugin } from "./types.ts";
 import { writeTool } from "./write.ts";
 
 const tools: ToolPlugin[] = [
+  listSkillsTool,
   loadSkillTool,
   readManyTool,
   lsTool,
