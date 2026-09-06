@@ -13,7 +13,7 @@ export const processStartTool: ToolPlugin = {
   available: (context) => context.processes !== undefined,
   register(server, context) {
     server.registerTool("process_start", {
-      description: "Start a persistent shell command in the invocation directory. Return its Herdr pane ID as the process handle.",
+      description: "Start a persistent or interactive shell command in the project using Herdr and return its pane handle. Prefer Codex command/exec for simple one-shot commands; use process_* when state, interaction, or long-running output must persist across calls.",
       inputSchema: fromJsonSchema<{ command: string }>(schema as JsonSchemaType),
     }, async ({ command }) => {
       try {
