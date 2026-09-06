@@ -74,7 +74,7 @@ async function main(): Promise<void> {
 
   const config = resolveServeConfig(command, persistent);
   const { startServer } = await import("./server.ts");
-  startServer(config);
+  await startServer(config);
 }
 
 try {

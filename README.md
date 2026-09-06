@@ -8,7 +8,7 @@ RCE keeps the scope intentionally small for focused software development. It exp
 
 The goal is maximum developer productivity inside one repository, not maximum feature count. RCE does not add multi-repo orchestration, subagents, artifact systems, or unrelated desktop features.
 
-RCE includes file reads, search, edits, Codex-compatible patches, shell commands, and optional persistent process control through [Herdr](https://herdr.dev/).
+RCE includes file reads, search, edits, Codex-compatible patches, shell commands, optional persistent process control through [Herdr](https://herdr.dev/), and on-demand Agent Skills discovered through Pi.
 
 ## Requirements
 
@@ -224,10 +224,15 @@ RCE exposes a small coding-focused tool set.
 
 | Area | Tools |
 | --- | --- |
+| Skills | `list_skills`, `load_skill` |
 | Read | `read`, `read_many`, `ls`, `find`, `grep` |
 | Edit | `write`, `apply_patch` |
 | Shell | `bash` |
 | Persistent processes with Herdr | `process_start`, `process_read`, `process_wait`, `process_send`, `process_info`, `process_stop` |
+
+`list_skills` is intended for early task discovery: use it near the start of a task to identify specialized Agent Skills that may apply, then call `load_skill` only for the ones you need. RCE discovers skills through Pi, including global `~/.agents/skills` and other Pi-supported skill sources.
+
+`load_skill` returns the full skill instructions on demand. Relative script, asset, and reference paths are resolved against that skill's own directory, so global skill helpers can be executed or read via absolute paths without copying them into the project.
 
 `apply_patch` uses the Codex patch format and supports multi-file edits.
 

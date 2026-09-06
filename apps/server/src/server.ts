@@ -17,9 +17,9 @@ const consentCssUrl = import.meta.url.endsWith(".ts")
   : new URL("./consent.css", import.meta.url);
 const consentCss = readFileSync(consentCssUrl, "utf8");
 
-export function startServer(config: RceConfig): void {
+export async function startServer(config: RceConfig): Promise<void> {
   const { auth, issuer, resource } = createAuth(config.origin);
-  const mcp = createMcp(ROOT, config.origin);
+  const mcp = await createMcp(ROOT, config.origin);
   const approvalCode = randomBytes(32).toString("hex").slice(0, 12).toUpperCase().match(/.{4}/g)!.join("-");
   const allowedHostnames = [issuer.hostname, "localhost", "127.0.0.1", "[::1]"];
   const protectedMcp = requireMcpAuth(auth, (request) => mcp.fetch(request), {
