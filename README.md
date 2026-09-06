@@ -4,6 +4,10 @@ RCE exposes one local project as an OAuth-protected MCP coding server for ChatGP
 
 Start `rce` inside the project that ChatGPT should control. That directory stays fixed as the workspace root until RCE exits.
 
+RCE keeps the scope intentionally small for focused software development. It exposes only the tools needed for the edit-test-debug loop and persistent terminal work.
+
+The goal is maximum developer productivity inside one repository, not maximum feature count. RCE does not add multi-repo orchestration, subagents, artifact systems, or unrelated desktop features.
+
 RCE includes file reads, search, edits, Codex-compatible patches, shell commands, and optional persistent process control through [Herdr](https://herdr.dev/).
 
 ## Requirements
@@ -18,17 +22,22 @@ RCE includes file reads, search, edits, Codex-compatible patches, shell commands
 
 ## Install
 
-Install RCE globally:
+Install RCE globally with npm:
 
 ```sh
 npm install -g rce-mcp
+cd ~/code/my-project
+rce
 ```
 
-Or run it without a global install:
+Or use `npx` without a global install:
 
 ```sh
+cd ~/code/my-project
 npx rce-mcp
 ```
+
+Both forms use the current directory as the fixed workspace root for that process.
 
 RCE binds only to loopback. The default local endpoint is:
 
@@ -203,7 +212,9 @@ Open a new chat and select RCE from the tools menu. You can also mention the app
 
 RCE creates fresh in-memory OAuth state on every launch. Stopping RCE invalidates tokens from that process, so ChatGPT can ask you to authorize again.
 
-A stable tunnel hostname avoids recreating the ChatGPT app when RCE restarts.
+The reconnect is deliberate. RCE keeps authorization ephemeral instead of preserving local auth state across server restarts.
+
+A stable tunnel hostname keeps the ChatGPT app endpoint unchanged while each RCE process gets a fresh authorization session.
 
 ## Tools
 
@@ -233,6 +244,10 @@ This fixed root keeps the tool surface tied to the project you chose at launch.
 Each RCE launch creates a fresh in-memory OAuth server and a new approval code.
 
 Stopping RCE invalidates every access token and refresh token issued by that process. RCE stores no authorization state on disk.
+
+RCE intentionally trades reconnect convenience for ephemeral authorization. Restarting the server creates a new auth secret and requires a new authorization flow.
+
+This deliberate reconnect keeps authorization state as short-lived as the RCE process instead of carrying trust across restarts.
 
 The public origin and local port have separate jobs:
 

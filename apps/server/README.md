@@ -4,19 +4,28 @@ RCE exposes one local project as an OAuth-protected MCP coding server for ChatGP
 
 Start `rce` inside the project that ChatGPT should control. That directory stays fixed as the workspace root until RCE exits.
 
+RCE keeps the scope intentionally small. The goal is maximum developer productivity inside one repository, not maximum feature count.
+
+It avoids multi-repo orchestration, subagents, artifact systems, and unrelated desktop features.
+
 ## Install
 
 RCE requires Node.js `>=22.19.0`.
 
 ```sh
 npm install -g rce-mcp
+cd ~/code/my-project
+rce
 ```
 
-Or run it without a global install:
+Or use `npx` without a global install:
 
 ```sh
+cd ~/code/my-project
 npx rce-mcp
 ```
+
+Both forms use the current directory as the fixed workspace root for that process.
 
 For the best workflow, install [Herdr](https://herdr.dev/) and run RCE from a Herdr pane:
 
@@ -126,7 +135,11 @@ ChatGPT currently calls custom MCP integrations **apps**.
 
 See the [OpenAI developer mode guide](https://help.openai.com/en/articles/12584461-developer-mode-and-full-mcp-connectors-in-chatgpt-beta) for current plan and workspace requirements.
 
-Stopping RCE invalidates OAuth tokens from that process. ChatGPT can ask you to authorize again after RCE restarts.
+Stopping RCE invalidates OAuth tokens from that process. ChatGPT must authorize again after RCE restarts.
+
+That reconnect is deliberate. RCE keeps authorization ephemeral instead of preserving local auth state across server restarts.
+
+The authorization lifetime stays tied to the RCE process instead of carrying trust across restarts.
 
 ## Tools
 
