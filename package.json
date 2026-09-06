@@ -7,8 +7,6 @@
       "packages/*"
     ],
     "catalog": {
-      "dotenv": "^17.4.2",
-      "zod": "^4.4.3",
       "typescript": "^6.0.3",
       "@types/node": "^24.13.3"
     }
@@ -19,12 +17,7 @@
     "build": "bun run --filter '*' build",
     "start": "bun run --filter '*' start",
     "check-types": "bun run --filter '*' check-types",
-    "dev:server": "bun run --filter server dev"
-  },
-  "dependencies": {
-    "@rce/env": "workspace:*",
-    "dotenv": "catalog:",
-    "zod": "catalog:"
+    "dev:server": "bun run --filter rce-mcp dev"
   },
   "devDependencies": {
     "@rce/config": "workspace:*",
@@ -34,8 +27,5 @@
   "patchedDependencies": {
     "@better-auth/cimd@1.7.2": "patches/@better-auth%2Fcimd@1.7.2.patch"
   },
-  "packageManager": "bun@1.4.0",
-  "bin": {
-    "rce": "apps/server/src/index.ts"
-  }
+  "packageManager": "bun@1.4.0"
 }

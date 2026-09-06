@@ -1,4 +1,3 @@
-import { env } from "@rce/env/server";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { herdr } from "./herdr.ts";
@@ -48,14 +47,14 @@ export class ProcessManager {
   readonly #launchFingerprints = new Map<string, LaunchFingerprint>();
   #pending: Promise<unknown> = Promise.resolve();
 
-  static create(root: string): ProcessManager | undefined {
+  static create(root: string, origin: string): ProcessManager | undefined {
     if (spawnSync("herdr", ["--version"]).status !== 0) return undefined;
-    return new ProcessManager(root);
+    return new ProcessManager(root, origin);
   }
 
-  private constructor(root: string) {
+  private constructor(root: string, origin: string) {
     this.#root = root;
-    this.#label = `rce-${createHash("sha256").update(JSON.stringify([root, env.RCE_ORIGIN])).digest("hex")}`;
+    this.#label = `rce-${createHash("sha256").update(JSON.stringify([root, origin])).digest("hex")}`;
   }
 
   async start(command: string): Promise<string> {
