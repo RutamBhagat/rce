@@ -3,6 +3,8 @@ name: Stage npm release
 on:
   push:
     branches: [main]
+    paths:
+      - apps/server/package.json
   workflow_dispatch:
 
 permissions:
@@ -22,6 +24,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v6
         with:
@@ -52,28 +56,41 @@ jobs:
         run: bun run build
         working-directory: .
 
-      - name: Set CI release version
+      - name: Read release version
         id: version
         shell: bash
         run: |
-          BASE_VERSION=$(node -p "require('./package.json').version")
-          NEXT_VERSION=$(node -e '
-            const [major, minor, patch] = process.argv[1].split(".").map(Number);
-            const run = Number(process.env.GITHUB_RUN_NUMBER);
-            if (![major, minor, patch, run].every(Number.isSafeInteger)) process.exit(1);
-            process.stdout.write(`${major}.${minor}.${patch + run}`);
-          ' "$BASE_VERSION")
-          npm pkg set version="$NEXT_VERSION"
-          echo "version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
-          echo "Staging rce-mcp@$NEXT_VERSION"
+          VERSION=$(node -p "require('./package.json').version")
+          SHOULD_STAGE=true
+
+          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            BEFORE='${{ github.event.before }}'
+            if [[ -n "$BEFORE" && "$BEFORE" != "0000000000000000000000000000000000000000" ]]; then
+              BEFORE_VERSION=$(git show "$BEFORE:apps/server/package.json" 2>/dev/null \
+                | node -e 'let s=""; process.stdin.on("data", c => s += c); process.stdin.on("end", () => { try { process.stdout.write(JSON.parse(s).version ?? "") } catch {} })')
+              if [[ "$BEFORE_VERSION" == "$VERSION" ]]; then
+                SHOULD_STAGE=false
+              fi
+            fi
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "should_stage=$SHOULD_STAGE" >> "$GITHUB_OUTPUT"
+          echo "Release version: rce-mcp@$VERSION"
 
       - name: Stage package on npm
+        if: steps.version.outputs.should_stage == 'true'
         run: npm stage publish . --access public
 
       - name: Write approval instructions
+        if: steps.version.outputs.should_stage == 'true'
         run: |
           {
             echo "### rce-mcp@${{ steps.version.outputs.version }} staged"
             echo
             echo "Approve it with 2FA from npm's Staged Packages UI or with \`npm stage approve <stage-id>\`."
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Note unchanged version
+        if: steps.version.outputs.should_stage != 'true'
+        run: echo "Package version is unchanged; nothing was staged." >> "$GITHUB_STEP_SUMMARY"
