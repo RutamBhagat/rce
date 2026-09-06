@@ -38,6 +38,13 @@ export class SkillService {
     ].join("\n");
   }
 
+  list(): string {
+    const visible = this.#skills.filter((skill) => !skill.disableModelInvocation);
+    if (visible.length === 0) return "No model-invokable Agent Skills were discovered when RCE started.";
+
+    return visible.map((skill) => `- ${skill.name}: ${skill.description}`).join("\n");
+  }
+
   async load(name: string): Promise<string> {
     const skill = this.#skills.find((candidate) => candidate.name === name);
     if (!skill) throw new Error(`Unknown skill: ${name}`);
@@ -45,7 +52,8 @@ export class SkillService {
     const content = await readFile(skill.filePath, "utf8");
     return [
       `<skill name="${escapeXml(skill.name)}" location="${escapeXml(skill.filePath)}">`,
-      `References are relative to ${skill.baseDir}.`,
+      `Resolve every relative path in this skill against: ${skill.baseDir}`,
+      "Use absolute paths when reading references/assets or executing helper scripts. Do not assume skill-relative paths are relative to the RCE project root.",
       "",
       content,
       "</skill>",
