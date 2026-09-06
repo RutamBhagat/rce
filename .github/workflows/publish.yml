@@ -1,0 +1,75 @@
+name: Stage npm release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-stage-main
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/server
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+
+      - name: Install npm with trusted-publishing support
+        run: npm install --global npm@11.19.1
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+        working-directory: .
+
+      - name: Typecheck
+        run: bun run check-types
+        working-directory: .
+
+      - name: Build
+        run: bun run build
+        working-directory: .
+
+      - name: Set CI release version
+        id: version
+        shell: bash
+        run: |
+          BASE_VERSION=$(node -p "require('./package.json').version")
+          NEXT_VERSION=$(node -e '
+            const [major, minor, patch] = process.argv[1].split(".").map(Number);
+            const run = Number(process.env.GITHUB_RUN_NUMBER);
+            if (![major, minor, patch, run].every(Number.isSafeInteger)) process.exit(1);
+            process.stdout.write(`${major}.${minor}.${patch + run}`);
+          ' "$BASE_VERSION")
+          npm pkg set version="$NEXT_VERSION"
+          echo "version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Staging rce-mcp@$NEXT_VERSION"
+
+      - name: Stage package on npm
+        run: npm stage publish . --access public
+
+      - name: Write approval instructions
+        run: |
+          {
+            echo "### rce-mcp@${{ steps.version.outputs.version }} staged"
+            echo
+            echo "Approve it with 2FA from npm's Staged Packages UI or with \`npm stage approve <stage-id>\`."
+          } >> "$GITHUB_STEP_SUMMARY"
