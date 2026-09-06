@@ -36,7 +36,8 @@
     "dev": "npm run build:css && node --watch src/index.ts",
     "start": "node dist/index.mjs",
     "test": "node --test src/config.test.ts",
-    "prepack": "npm run build"
+    "prepack": "npm run build && node scripts/readme.mjs copy",
+    "postpack": "node scripts/readme.mjs clean"
   },
   "dependencies": {
     "@clack/prompts": "1.7.0",

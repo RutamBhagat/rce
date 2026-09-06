@@ -210,6 +210,8 @@ ChatGPT currently calls custom MCP integrations **apps**. OpenAI documents the s
 
 Open a new chat and select RCE from the tools menu. You can also mention the app when a message needs repository access.
 
+For uninterrupted file and shell operations, you may also open **Settings → Plugins → RCE → Permissions** and select **Allow all actions**. This is optional and grants elevated capability; it is not required just to connect RCE.
+
 RCE creates fresh in-memory OAuth state on every launch. Stopping RCE invalidates tokens from that process, so ChatGPT can ask you to authorize again.
 
 The reconnect is deliberate. RCE keeps authorization ephemeral instead of preserving local auth state across server restarts.
