@@ -1,13 +1,15 @@
 import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
 import { PiService } from "./services/pi.ts";
 import { ProcessManager } from "./services/process-manager.ts";
+import { SkillService } from "./services/skills.ts";
 import { registerTools } from "./tools/index.ts";
 import type { ToolContext } from "./tools/types.ts";
 
-export function createMcp(root: string, origin: string) {
+export async function createMcp(root: string, origin: string) {
   const context: ToolContext = {
     root,
     pi: new PiService(root),
+    skills: await SkillService.create(root),
     processes: ProcessManager.create(root, origin),
   };
 
