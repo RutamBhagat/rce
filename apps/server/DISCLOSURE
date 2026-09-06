@@ -1,0 +1,5 @@
+RCE is a local developer tool that exposes the current working directory through an OAuth-protected MCP server. Its capabilities include reading, searching, creating, editing, and deleting files, plus executing shell commands and managing local processes inside the selected project.
+
+These capabilities are intended for authorized software-development work on machines and repositories the user controls. Because an approved MCP client can execute commands and modify project files, users should only connect clients they trust and should review the workspace and approval code before granting access.
+
+RCE is not intended for unauthorized access, credential theft, persistence, stealth, exploitation of third-party systems, or other malicious activity.

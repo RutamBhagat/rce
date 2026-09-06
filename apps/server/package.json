@@ -7,8 +7,21 @@
     "rce": "dist/index.mjs"
   },
   "files": [
-    "dist"
+    "dist",
+    "DISCLOSURE"
   ],
+  "contentPolicy": {
+    "class": "dual-use"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RutamBhagat/rce.git",
+    "directory": "apps/server"
+  },
+  "homepage": "https://github.com/RutamBhagat/rce#readme",
+  "bugs": {
+    "url": "https://github.com/RutamBhagat/rce/issues"
+  },
   "engines": {
     "node": ">=22.19.0"
   },
