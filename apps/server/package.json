@@ -35,9 +35,11 @@
     "check-types": "tsc -b",
     "dev": "npm run build:css && node --watch src/index.ts",
     "start": "node dist/index.mjs",
+    "test": "node --test src/config.test.ts",
     "prepack": "npm run build"
   },
   "dependencies": {
+    "@clack/prompts": "1.7.0",
     "@better-auth/mcp": "1.7.2",
     "@better-auth/memory-adapter": "1.7.2",
     "@better-auth/oauth-provider": "1.7.2",
@@ -48,6 +50,7 @@
     "@remix-run/html-template": "0.3.1",
     "better-auth": "1.7.2",
     "elysia": "1.4.30",
+    "env-paths": "4.0.0",
     "pino": "10.3.1",
     "pino-pretty": "13.1.3"
   },

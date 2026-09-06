@@ -15,21 +15,29 @@ Or without installing:
 npx rce-mcp
 ```
 
-The default endpoint is `http://127.0.0.1:6767/mcp`.
+The first interactive run asks for the local port and public origin and saves them in the OS-native user config directory. Press Enter through setup to accept port `6767` and origin `http://127.0.0.1:6767`.
 
-For a public HTTPS tunnel/reverse proxy:
+After that, `rce` starts without prompting. Use `rce --yes` to save the defaults non-interactively.
 
-```sh
-npx rce-mcp --origin https://rce.example.com
-```
-
-To change the loopback port:
+Flags and environment variables override saved configuration for one run without changing it:
 
 ```sh
-npx rce-mcp --port 7000
+rce --origin https://rce.example.com
+rce --port 7000
 ```
 
-No `.env` file is loaded. `RCE_ORIGIN` and `PORT` remain supported as shell environment overrides.
+Persist settings explicitly with:
+
+```sh
+rce init
+rce config get
+rce config set origin https://rce.example.com
+rce config set port 7000
+rce config unset origin
+rce config reset
+```
+
+Precedence is CLI flags, `RCE_ORIGIN`/`PORT`, saved config, then defaults. No project `.env` file is loaded.
 
 ```sh
 rce --help

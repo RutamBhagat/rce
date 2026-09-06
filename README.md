@@ -21,25 +21,44 @@ npx rce-mcp
 
 Run either command from the project directory you want RCE to access.
 
-No project `.env` file is required. The default local endpoint is:
+On the first interactive run, RCE asks for a local port and public origin, then saves them in the OS-native user config directory. Press Enter through both prompts to accept the defaults:
+
+```text
+port:   6767
+origin: http://127.0.0.1:6767
+```
+
+After setup, `rce` starts normally without prompting. To configure non-interactively with the defaults:
+
+```sh
+rce --yes
+```
+
+For a one-off run, CLI flags override saved configuration without changing it:
+
+```sh
+rce --origin https://rce.example.com
+rce --port 7000
+```
+
+Environment variables `RCE_ORIGIN` and `PORT` are also one-run overrides. Precedence is flags, environment, saved config, then defaults. RCE does not load project `.env` files.
+
+Manage persistent settings with:
+
+```sh
+rce init
+rce config get
+rce config set origin https://rce.example.com
+rce config set port 7000
+rce config unset origin
+rce config reset
+```
+
+The default local endpoint is:
 
 ```text
 http://127.0.0.1:6767/mcp
 ```
-
-For remote access, start your HTTPS tunnel/reverse proxy separately and pass its public origin directly:
-
-```sh
-npx rce-mcp --origin https://rce.example.com
-```
-
-Change the local listener port with:
-
-```sh
-npx rce-mcp --port 7000
-```
-
-`RCE_ORIGIN` and `PORT` are still accepted as shell environment overrides for automation, but RCE does not load `.env` files.
 
 ```sh
 rce --help
