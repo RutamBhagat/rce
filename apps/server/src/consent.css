@@ -1,0 +1,25 @@
+@import "tailwindcss" source("./");
+
+@theme {
+  --color-shell: #e8edf1;
+  --color-paper: #f8fafb;
+  --color-ink: #15202b;
+  --color-slate: #64717d;
+  --color-signal: #2754d8;
+  --font-sans: "Avenir Next", Avenir, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "SFMono-Regular", "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    margin: 0;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-signal) 20%, transparent);
+  }
+}

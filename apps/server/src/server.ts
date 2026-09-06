@@ -3,6 +3,7 @@ import { requireMcpAuth } from "@better-auth/mcp";
 import { hostHeaderValidationResponse, originValidationResponse } from "@modelcontextprotocol/server";
 import { Elysia, t } from "elysia";
 import { randomBytes } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { createAuth, SCOPE } from "./auth.ts";
 import type { RceConfig } from "./config.ts";
 import { consentHeaders, consentPage } from "./consent.ts";
@@ -10,6 +11,11 @@ import { log } from "./logger.ts";
 import { createMcp } from "./mcp.ts";
 import { consentBody, consentQuery } from "./oauth-schemas.ts";
 import { ROOT } from "./root.ts";
+
+const consentCssUrl = import.meta.url.endsWith(".ts")
+  ? new URL("../dist/consent.css", import.meta.url)
+  : new URL("./consent.css", import.meta.url);
+const consentCss = readFileSync(consentCssUrl, "utf8");
 
 export function startServer(config: RceConfig): void {
   const { auth, issuer, resource } = createAuth(config.origin);
@@ -58,6 +64,13 @@ export function startServer(config: RceConfig): void {
       }, "http.error");
     })
     .get("/", () => "OK")
+    .get("/consent.css", () => new Response(consentCss, {
+      headers: {
+        "Cache-Control": "no-store",
+        "Content-Type": "text/css; charset=utf-8",
+        "X-Content-Type-Options": "nosniff",
+      },
+    }))
     .get("/login", async ({ request, status }) => {
       const oauthQuery = new URL(request.url).search.slice(1);
       if (!oauthQuery) return status(400, "Invalid authorization request.");

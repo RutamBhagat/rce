@@ -29,9 +29,11 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsdown",
+    "build": "npm run build:server && npm run build:css",
+    "build:server": "tsdown",
+    "build:css": "tailwindcss -i ./src/consent.css -o ./dist/consent.css --minify",
     "check-types": "tsc -b",
-    "dev": "node --watch src/index.ts",
+    "dev": "npm run build:css && node --watch src/index.ts",
     "start": "node dist/index.mjs",
     "prepack": "npm run build"
   },
@@ -51,6 +53,8 @@
   },
   "devDependencies": {
     "@better-auth/cimd": "1.7.2",
+    "@tailwindcss/cli": "4.3.3",
+    "tailwindcss": "4.3.3",
     "tsdown": "^0.22.14",
     "typescript": "^6.0.3"
   }
