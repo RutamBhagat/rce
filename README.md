@@ -1,14 +1,72 @@
 # RCE
 
-RCE exposes one local project as an OAuth-protected MCP coding server for ChatGPT.
+RCE exposes the current project to ChatGPT through an OAuth-protected MCP server.
 
-Start `rce` inside the project that ChatGPT should control. That directory stays fixed as the workspace root until RCE exits.
+Think of RCE as a remote bridge to the local Codex CLI runtime, with extra Herdr process controls.
 
-RCE keeps the scope intentionally small for focused software development. It exposes only the tools needed for the edit-test-debug loop and persistent terminal work.
+RCE starts one `codex app-server` in the project directory. ChatGPT can inspect the exact app-server protocol and call its non-inference runtime methods. This gives access to Codex filesystem, command, skill, plugin, MCP, and other runtime surfaces supported by the installed Codex version.
 
-The goal is maximum developer productivity inside one repository, not maximum feature count. RCE does not add multi-repo orchestration, subagents, artifact systems, or unrelated desktop features.
+RCE also adds direct batched reads, Codex-format patching, and persistent interactive processes through [Herdr](https://herdr.dev/).
 
-RCE exposes a focused MCP surface: batched file reads, Codex-compatible patches, optional persistent process control through [Herdr](https://herdr.dev/), and raw access to the local Codex app-server control plane.
+> [!IMPORTANT]
+> RCE does not start Codex model inference. It exposes the Codex runtime and control plane, not another coding agent.
+
+## What RCE exposes
+
+The Codex app-server is the primary control plane.
+
+| Area | RCE tools | Purpose |
+| --- | --- | --- |
+| Codex app-server | `codex_protocol`, `codex_rpc`, `codex_events`, `codex_respond` | Inspect and use the allowed Codex runtime control plane. |
+| Direct files | `read_many`, `apply_patch` | Read files in batches and apply structured Codex-format patches. |
+| Persistent processes | `process_start`, `process_read`, `process_wait`, `process_send`, `process_info`, `process_stop` | Run and control persistent or interactive commands through Herdr. |
+
+At startup, RCE asks the installed Codex binary to generate its experimental app-server JSON schemas. The `codex_protocol` tool reads those schemas. The available RPC surface therefore follows the local Codex version instead of a hard-coded method list.
+
+Typical `codex_rpc` capabilities include:
+
+- standalone command execution with `command/exec`
+- skill discovery with `skills/list`
+- plugin discovery and inspection with `plugin/*`
+- MCP inventory and direct MCP calls with `mcpServer*`
+- thread and runtime metadata that do not start model execution
+- other non-inference client requests exposed by the installed app-server
+
+For source search, call `command/exec` with `rg` or `rg --files`. Codex also exposes `fuzzyFileSearch` for fuzzy filename search when the installed version supports it.
+
+`read_many` and `apply_patch` remain useful shortcuts for common coding work. They avoid extra app-server RPC discovery for batched reads and structured edits.
+
+### Methods RCE blocks
+
+RCE owns the app-server connection handshake, so it does not forward `initialize` or `initialized`.
+
+RCE also blocks Codex model-execution methods:
+
+- `turn/*`
+- `review/start`
+- `thread/compact/start`
+- `thread/queue/start`
+- `thread/realtime/*`
+
+This boundary keeps ChatGPT as the active model while Codex supplies local runtime capabilities.
+
+### Plugins, skills, browser, and Computer Use
+
+Because RCE exposes the Codex app-server, ChatGPT can discover the skills and plugins available to that Codex installation.
+
+Use `skills/list` and `plugin/installed` to inspect them. Use `mcpServerStatus/list` to inspect MCP-backed plugin tools after you create a runtime thread when required.
+
+Not every plugin action is callable outside a Codex model turn. Connector-only app actions can be unavailable through this bridge.
+
+Computer Use requires Codex turn metadata, but it does not require a Codex model turn for direct MCP calls. RCE can create an ephemeral runtime thread and supply synthetic `x-codex-turn-metadata` when it calls `cua_repl` through `mcpServer/tool/call`. This keeps Computer Use on the runtime path and avoids Codex model inference.
+
+Native app access can require a Computer Use approval. Start the ephemeral thread with `approvalPolicy: "on-request"` before selecting an app.
+
+Do not use `approvalPolicy: "never"` for Computer Use. That policy rejects required app approvals before RCE can surface them.
+
+When `codex_rpc` returns a pending `mcpServer/elicitation/request`, answer it with `codex_respond`. Then resume the returned RPC handle.
+
+For session-scoped approval, accept the elicitation with response metadata `{ "persist": "session" }`. Use durable approval only when the user requests it.
 
 ## Requirements
 
@@ -30,22 +88,24 @@ cd ~/code/my-project
 rce
 ```
 
-Or use `npx` without a global install:
+Or run it with `npx`:
 
 ```sh
 cd ~/code/my-project
 npx rce-mcp
 ```
 
-Both forms use the current directory as the fixed workspace root for that process.
+RCE fixes the current directory as the workspace root for that process.
 
-RCE binds only to loopback. The default local endpoint is:
+The default local MCP endpoint is:
 
 ```text
 http://127.0.0.1:6767/mcp
 ```
 
-## Recommended terminal setup
+RCE binds only to loopback.
+
+## Add Herdr process control
 
 Install Herdr if you want persistent interactive process control:
 
@@ -53,46 +113,42 @@ Install Herdr if you want persistent interactive process control:
 brew install herdr
 ```
 
-Other install methods are available in the [Herdr install guide](https://herdr.dev/docs/install/).
+Other install methods are in the [Herdr install guide](https://herdr.dev/docs/install/).
 
-Start Herdr from the project directory:
+RCE detects the `herdr` CLI at startup. When Herdr is available, RCE registers the `process_*` tools.
 
-```sh
-cd ~/code/my-project
-herdr
-```
+These tools use dedicated Herdr panes for long-running or interactive commands. They can read terminal output, send input, and wait for output. They can also inspect foreground process state and close the process pane.
 
-After tunnel setup, run RCE from a Herdr pane for the best workflow.
-
-RCE detects the `herdr` CLI and adds persistent process tools when it is available. Without Herdr, the file, search, patch, and shell tools still work.
+Without Herdr, the Codex app-server tools, `read_many`, and `apply_patch` still work.
 
 ## Create a stable HTTPS endpoint
 
 A stable hostname keeps the ChatGPT app configuration unchanged between RCE sessions.
 
-### Cloudflare Tunnel, recommended for a permanent endpoint
+### Cloudflare Tunnel
 
-Cloudflare recommends remotely managed tunnels for most use cases. They keep tunnel configuration in Cloudflare and support stable public hostnames.
+Cloudflare recommends remotely managed tunnels for most use cases. They support stable public hostnames and keep tunnel configuration in Cloudflare.
 
 1. Open the [Cloudflare Tunnels dashboard](https://one.dash.cloudflare.com/) and create a tunnel.
 2. Name the tunnel, for example `rce`.
 3. Select your operating system and run the generated `cloudflared` install command.
 4. Wait until Cloudflare shows the connector as healthy.
+
 5. Add a **Published application** route.
-6. Set the public hostname, for example `rce.example.com`.
+6. Set a public hostname, for example `rce.example.com`.
 7. Set the service URL to `http://localhost:6767`.
 8. Save the route.
 
 See the [Cloudflare Tunnel setup guide](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/get-started/create-remote-tunnel/) for the current dashboard flow.
 
-Use the public origin when you configure RCE:
+Save the public origin in RCE:
 
 ```sh
 rce config set port 6767
 rce config set origin https://rce.example.com
 ```
 
-The ChatGPT MCP endpoint is then:
+The public MCP endpoint is then:
 
 ```text
 https://rce.example.com/mcp
@@ -105,7 +161,7 @@ https://rce.example.com/mcp
 
 [Tailscale Funnel](https://tailscale.com/docs/features/tailscale-funnel) is a quick alternative when you already use Tailscale.
 
-Enable Funnel for your tailnet, then expose the RCE port:
+Expose the RCE port:
 
 ```sh
 tailscale funnel --bg 6767
@@ -132,7 +188,7 @@ tailscale funnel reset
 
 Both tunnel options publish an HTTPS endpoint to the Internet. RCE still requires OAuth before MCP tools can run.
 
-## Initial RCE setup
+## Configure RCE
 
 Run setup from the project that ChatGPT should control:
 
@@ -158,20 +214,20 @@ rce
 
 Each launch prints an approval code. Keep that terminal visible while you connect ChatGPT.
 
-For non-interactive local defaults:
+Use local defaults without interactive setup:
 
 ```sh
 rce --yes
 ```
 
-Flags can override saved configuration for one run:
+Override saved configuration for one run:
 
 ```sh
 rce --origin https://rce.example.com
 rce --port 7000
 ```
 
-Environment variables `RCE_ORIGIN` and `PORT` also override saved values for one run.
+`RCE_ORIGIN` and `PORT` also override saved values for one run.
 
 Configuration precedence is:
 
@@ -189,75 +245,43 @@ rce config unset origin
 rce config reset
 ```
 
-## Create the ChatGPT custom app (plugin)
+## Connect ChatGPT
 
-ChatGPT currently calls custom MCP integrations **apps**. OpenAI documents the setup under developer mode and custom MCP apps.
+ChatGPT calls custom MCP integrations **apps**.
 
 > [!NOTE]
-> Full MCP write and modify actions currently require supported ChatGPT Business or Enterprise/Edu access. Check the [current OpenAI developer mode guide](https://help.openai.com/en/articles/12584461-developer-mode-and-full-mcp-connectors-in-chatgpt-beta) before setup.
+> MCP write and modify actions depend on current ChatGPT plan and workspace support. Check the [OpenAI developer mode guide](https://help.openai.com/en/articles/12584461-developer-mode-and-full-mcp-connectors-in-chatgpt-beta) before setup.
 
 1. Open ChatGPT on the web.
 2. Enable **Developer mode** for your account or workspace.
-3. Open **Settings → Apps → Create**. Workspace admins can also use **Workspace settings → Apps → Create**.
+3. Open **Settings → Apps → Create**.
 4. Enter a name such as `RCE`.
 5. Set the MCP endpoint to `https://rce.example.com/mcp`.
-6. Select OAuth authentication when ChatGPT asks for the authentication method.
+6. Select OAuth authentication.
+
 7. Select **Scan Tools**.
 8. Complete the OAuth flow in the browser.
 9. Compare the browser approval code with the code printed by RCE.
 10. Approve only when both codes match.
 11. Wait for the tool scan to finish, then select **Create**.
 
-Open a new chat and select RCE from the tools menu. You can also mention the app when a message needs repository access.
+Open a new chat and select RCE from the tools menu. You can also mention RCE when a message needs project access.
 
-For uninterrupted file and shell operations, you may also open **Settings → Plugins → RCE → Permissions** and select **Allow all actions**. This is optional and grants elevated capability; it is not required just to connect RCE.
+If your ChatGPT client exposes plugin permissions, you can allow RCE actions there. Grant only the access level you want RCE to have.
 
-RCE creates fresh in-memory OAuth state on every launch. Stopping RCE invalidates tokens from that process, so ChatGPT can ask you to authorize again.
-
-The reconnect is deliberate. RCE keeps authorization ephemeral instead of preserving local auth state across server restarts.
-
-A stable tunnel hostname keeps the ChatGPT app endpoint unchanged while each RCE process gets a fresh authorization session.
-
-## Tools
-
-RCE exposes a small coding-focused tool set.
-
-| Area | Tools |
-| --- | --- |
-| Codex app-server | `codex_protocol`, `codex_rpc`, `codex_events`, `codex_respond` |
-| Read | `read_many` |
-| Edit | `apply_patch` |
-| Persistent processes with Herdr | `process_start`, `process_read`, `process_wait`, `process_send`, `process_info`, `process_stop` |
-
-`read_many` is a standalone implementation of Pi's useful read semantics without depending on Pi: relative/absolute paths, 1-indexed `offset`/`limit`, image attachments, and text truncation at 2,000 lines or 50KB.
-
-`apply_patch` uses the Codex patch format and is intended for multi-file or structured incremental edits.
-
-Persistent process tools use Herdr panes. RCE does not register them when the `herdr` CLI is unavailable.
-
-RCE starts one `codex app-server` for the project and exposes its runtime/control-plane client requests through `codex_rpc`. Connection-handshake RPCs and Codex model-execution surfaces (`turn/*`, review, compaction, queue start, and realtime sessions) are blocked. `codex_protocol` searches the exact protocol schemas generated by the installed Codex binary. `codex_events` drains notifications and surfaces server-initiated requests; answer those with `codex_respond` and then resume the pending `codex_rpc` handle.
-
-Direct app-server runtime calls such as `fs/*`, `command/*`, and `mcpServer/*` do not start a Codex model turn. RCE blocks Codex model-execution RPCs entirely.
-
-## Workspace model
+## Workspace and authorization model
 
 RCE resolves the current working directory once at startup and uses its canonical path as the workspace root.
 
-Start one RCE process per project. Restart RCE from another directory when you want ChatGPT to control another project.
+Start one RCE process per project. Restart RCE from another directory when you want to expose another project.
 
-This fixed root keeps the tool surface tied to the project you chose at launch.
+Each RCE launch also creates fresh in-memory OAuth state and a new approval code. RCE stores no authorization state on disk.
 
-## OAuth lifecycle
+Stopping RCE invalidates the access and refresh tokens issued by that process. ChatGPT can ask you to authorize again after a restart.
 
-Each RCE launch creates a fresh in-memory OAuth server and a new approval code.
+A stable public hostname keeps the ChatGPT app endpoint unchanged while each RCE process gets a new authorization session.
 
-Stopping RCE invalidates every access token and refresh token issued by that process. RCE stores no authorization state on disk.
-
-RCE intentionally trades reconnect convenience for ephemeral authorization. Restarting the server creates a new auth secret and requires a new authorization flow.
-
-This deliberate reconnect keeps authorization state as short-lived as the RCE process instead of carrying trust across restarts.
-
-The public origin and local port have separate jobs:
+The two configuration values have separate roles:
 
 - `origin` is the public HTTPS origin used by OAuth and MCP clients.
 - `port` is the local loopback port where RCE listens.
