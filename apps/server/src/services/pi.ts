@@ -1,6 +1,5 @@
 import {
   createBashTool,
-  createEditTool,
   createFindTool,
   createGrepTool,
   createLsTool,
@@ -17,30 +16,30 @@ type CodingTool = {
   execute: (toolCallId: string, args: any, signal?: AbortSignal) => Promise<{ content: unknown[] }>;
 };
 
-export type PiToolName = "read" | "ls" | "find" | "grep" | "write" | "edit" | "bash";
+export type PiToolName = "ls" | "find" | "grep" | "write" | "bash";
 export type PiResult = { content: unknown[] };
 
 export class PiService {
+  readonly #read: CodingTool;
   readonly #tools: Record<PiToolName, CodingTool>;
 
   constructor(root: string) {
+    this.#read = createReadTool(root);
     this.#tools = {
-      read: createReadTool(root),
       ls: createLsTool(root),
       find: createFindTool(root),
       grep: createGrepTool(root),
       write: createWriteTool(root),
-      edit: createEditTool(root),
       bash: createBashTool(root),
     };
   }
 
   get readParameters(): JsonSchemaType {
-    return this.#tools.read.parameters as JsonSchemaType;
+    return this.#read.parameters as JsonSchemaType;
   }
 
   async read(args: ReadToolInput, signal?: AbortSignal): Promise<PiResult> {
-    return this.#tools.read.execute(crypto.randomUUID(), args, signal);
+    return this.#read.execute(crypto.randomUUID(), args, signal);
   }
 
   register(server: McpServer, name: PiToolName): void {

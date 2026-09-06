@@ -18,7 +18,7 @@ export const readManyTool: ToolPlugin = {
     } as const;
 
     server.registerTool("read_many", {
-      description: "Read multiple files or line ranges in one call using the same { path, offset?, limit? } shape as read. Best after grep/find identifies the relevant files, then batch those reads to reduce round trips.",
+      description: "Read one or more files or line ranges in one call. Each entry uses { path, offset?, limit? }. Use a single entry for one file, or batch several reads after grep/find to reduce round trips.",
       inputSchema: fromJsonSchema<{ reads: ReadToolInput[] }>(schema as JsonSchemaType),
     }, async ({ reads }, ctx) => {
       const results = await Promise.all(reads.map(async (args) => {
