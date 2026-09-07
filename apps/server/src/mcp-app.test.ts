@@ -21,7 +21,7 @@ test("tool result resource advertises CSP and a stable widget domain", async () 
   } as unknown as McpServer;
 
   const origin = "https://rce.example.com";
-  registerToolResultApp(server, origin);
+  registerToolResultApp(server, origin, async () => "<html></html>");
 
   assert.equal(registeredConfig._meta.ui.domain, origin);
   assert.deepEqual(registeredConfig._meta.ui.csp, {

@@ -7,7 +7,11 @@ const toolResultHtmlUrl = import.meta.url.endsWith(".ts")
   ? new URL("../dist/tool-result.html", import.meta.url)
   : new URL("./tool-result.html", import.meta.url);
 
-export function registerToolResultApp(server: McpServer, origin: string): void {
+export function registerToolResultApp(
+  server: McpServer,
+  origin: string,
+  readToolResultHtml: () => Promise<string> = () => readFile(toolResultHtmlUrl, "utf8"),
+): void {
   const resourceMeta = {
     ui: {
       csp: {
@@ -38,7 +42,7 @@ export function registerToolResultApp(server: McpServer, origin: string): void {
       contents: [{
         uri: TOOL_RESULT_RESOURCE_URI,
         mimeType: RESOURCE_MIME_TYPE,
-        text: await readFile(toolResultHtmlUrl, "utf8"),
+        text: await readToolResultHtml(),
         _meta: resourceMeta,
       }],
     }),
