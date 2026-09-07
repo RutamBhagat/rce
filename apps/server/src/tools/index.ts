@@ -1,10 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { applyPatchTool } from "./apply-patch.ts";
 import { bashTool } from "./bash.ts";
-import { codexEventsTool } from "./codex-events.ts";
-import { codexProtocolTool } from "./codex-protocol.ts";
-import { codexRespondTool } from "./codex-respond.ts";
-import { codexRpcTool } from "./codex-rpc.ts";
 import { findTool } from "./find.ts";
 import { grepTool } from "./grep.ts";
 import { listSkillsTool } from "./list-skills.ts";
@@ -36,10 +32,6 @@ const tools: ToolPlugin[] = [
   processSendTool,
   processInfoTool,
   processStopTool,
-  codexProtocolTool,
-  codexRpcTool,
-  codexEventsTool,
-  codexRespondTool,
 ];
 
 export function registerTools(server: McpServer, context: ToolContext): void {
@@ -47,4 +39,5 @@ export function registerTools(server: McpServer, context: ToolContext): void {
     if (tool.available?.(context) === false) continue;
     tool.register(server, context);
   }
+  context.pi.registerExtensions(server);
 }

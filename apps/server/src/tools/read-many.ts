@@ -111,7 +111,7 @@ async function readOne(root: string, input: ReadInput, signal?: AbortSignal): Pr
   let outputText: string;
   if (truncation.firstLineExceedsLimit) {
     const firstLineSize = formatSize(Buffer.byteLength(allLines[startLine] ?? "", "utf8"));
-    outputText = `[Line ${startLineDisplay} is ${firstLineSize}, exceeds ${formatSize(DEFAULT_MAX_BYTES)} limit. Use codex_rpc command/exec with sed/head to inspect that line.]`;
+    outputText = `[Line ${startLineDisplay} is ${firstLineSize}, exceeds ${formatSize(DEFAULT_MAX_BYTES)} limit. Use bash with sed/head to inspect that line.]`;
   } else if (truncation.truncated) {
     const endLineDisplay = startLineDisplay + truncation.outputLines - 1;
     const nextOffset = endLineDisplay + 1;

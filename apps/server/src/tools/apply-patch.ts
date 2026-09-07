@@ -85,7 +85,7 @@ async function validatePatchPaths(root: string, patchText: string): Promise<void
 export const applyPatchTool: ToolPlugin = {
   register(server, context) {
     server.registerTool("apply_patch", {
-      description: "Use this when an edit spans multiple files or benefits from one structured incremental patch. Applies Codex-format add, update, move, and delete operations across one or more text files. Codex app-server currently has no direct apply-patch client RPC.",
+      description: "Use this when an edit spans multiple files or benefits from one structured incremental patch. Applies Codex-format add, update, move, and delete operations across one or more text files.",
       inputSchema: fromJsonSchema<{ patch: string }>(schema as JsonSchemaType),
     }, async ({ patch }, ctx) => {
       try {

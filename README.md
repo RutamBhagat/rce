@@ -2,18 +2,18 @@
 
 RCE exposes the current project to ChatGPT through an OAuth-protected MCP server.
 
-RCE exposes fast local coding tools backed by Pi, persistent process controls through Herdr, and an optional Codex app-server escape hatch for plugin/MCP capabilities.
+RCE exposes fast local coding tools backed by Pi, persistent process controls through Herdr, and MCP tools discovered from the local Codex CLI through `pi-mcp-adapter`.
 
-For regular filesystem, search, shell, and process work, models should prefer the Pi-backed and Herdr tools. The Codex app-server should only be used when a task requires Codex plugins/MCP or another capability that is not exposed directly.
+For regular filesystem, search, shell, and process work, models should prefer the Pi-backed and Herdr tools. MCP-backed plugin tools are projected into the same native tool surface, so there is no Codex app-server RPC hop during tool calls.
 
 RCE also provides direct batched reads and Codex-format patching shortcuts.
 
 > [!IMPORTANT]
-> RCE does not start Codex model inference. It exposes the Codex runtime and control plane, not another coding agent.
+> RCE does not start Codex model inference or a Codex app-server. Codex is used only to resolve the effective MCP inventory at startup.
 
 ## What RCE exposes
 
-Pi and Herdr are the primary path for ordinary coding work. Codex is the plugin/runtime fallback.
+Pi and Herdr are the primary path for ordinary coding work. MCP-backed plugins are exposed as native Pi extension tools.
 
 | Area | RCE tools | Purpose |
 | --- | --- | --- |
@@ -21,50 +21,13 @@ Pi and Herdr are the primary path for ordinary coding work. Codex is the plugin/
 | Pi skills | `list_skills`, `load_skill` | Discover and load local Agent Skills without routing through Codex. |
 | Direct files | `read_many`, `apply_patch` | Read files in batches and apply structured Codex-format patches. |
 | Persistent processes | `process_start`, `process_read`, `process_wait`, `process_send`, `process_info`, `process_stop` | Run and control persistent or interactive commands through Herdr. |
-| Codex app-server | `codex_protocol`, `codex_rpc`, `codex_events`, `codex_respond` | Fallback for Codex plugins/MCP and other Codex-only runtime capabilities. |
+| MCP plugins | dynamically discovered direct tools | MCP servers from the effective Codex CLI configuration, connected through `pi-mcp-adapter`. |
 
-At startup, RCE asks the installed Codex binary to generate its experimental app-server JSON schemas. The `codex_protocol` tool reads those schemas. The available RPC surface therefore follows the local Codex version instead of a hard-coded method list.
+At startup, RCE runs `codex mcp list --json` once and converts the effective transports into an in-memory `pi-mcp-adapter` configuration. The inventory output is never logged because it can contain resolved environment values or HTTP headers.
 
-Use `codex_rpc` only when the direct tools do not expose the required capability. Typical Codex-only uses include:
+`pi-mcp-adapter` connects enabled servers to discover tool metadata and caches it. MCP tools are then registered directly, so calls do not pass through a generic JSON-RPC gateway or require the model to translate method names and schemas.
 
-- plugin discovery and inspection with `plugin/*`
-- MCP inventory and direct MCP calls with `mcpServer*`
-- thread and runtime metadata that do not start model execution
-- other non-inference client requests exposed by the installed app-server
-
-For source search and shell work, use `grep`, `find`, `ls`, or `bash` rather than `codex_rpc`. Use `process_*` when the command must remain interactive or persistent.
-
-### Methods RCE blocks
-
-RCE owns the app-server connection handshake, so it does not forward `initialize` or `initialized`.
-
-RCE also blocks Codex model-execution methods:
-
-- `turn/*`
-- `review/start`
-- `thread/compact/start`
-- `thread/queue/start`
-- `thread/realtime/*`
-
-This boundary keeps ChatGPT as the active model while Codex supplies local runtime capabilities.
-
-### Plugins, skills, browser, and Computer Use
-
-Because RCE exposes the Codex app-server, ChatGPT can discover the skills and plugins available to that Codex installation.
-
-Use `skills/list` and `plugin/installed` to inspect them. Use `mcpServerStatus/list` to inspect MCP-backed plugin tools after you create a runtime thread when required.
-
-Not every plugin action is callable outside a Codex model turn. Connector-only app actions can be unavailable through this bridge.
-
-Computer Use requires Codex turn metadata, but it does not require a Codex model turn for direct MCP calls. RCE can create an ephemeral runtime thread and supply synthetic `x-codex-turn-metadata` when it calls `cua_repl` through `mcpServer/tool/call`. This keeps Computer Use on the runtime path and avoids Codex model inference.
-
-Native app access can require a Computer Use approval. Start the ephemeral thread with `approvalPolicy: "on-request"` before selecting an app.
-
-Do not use `approvalPolicy: "never"` for Computer Use. That policy rejects required app approvals before RCE can surface them.
-
-When `codex_rpc` returns a pending `mcpServer/elicitation/request`, answer it with `codex_respond`. Then resume the returned RPC handle.
-
-For session-scoped approval, accept the elicitation with response metadata `{ "persist": "session" }`. Use durable approval only when the user requests it.
+Connector-only Codex app bindings and Codex-specific thread/runtime APIs are intentionally outside this surface. RCE only projects MCP-backed capabilities here.
 
 ## Requirements
 
@@ -117,7 +80,7 @@ RCE detects the `herdr` CLI at startup. When Herdr is available, RCE registers t
 
 These tools use dedicated Herdr panes for long-running or interactive commands. They can read terminal output, send input, and wait for output. They can also inspect foreground process state and close the process pane.
 
-Without Herdr, the Codex app-server tools, `read_many`, and `apply_patch` still work.
+Without Herdr, the Pi-backed tools, MCP plugin tools, `read_many`, and `apply_patch` still work.
 
 ## Create a stable HTTPS endpoint
 
