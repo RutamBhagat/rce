@@ -11,9 +11,10 @@ import {
   type ExtensionContext,
   type ReadToolInput,
 } from "@earendil-works/pi-coding-agent";
-import { fromJsonSchema, type JsonSchemaType, type McpServer } from "@modelcontextprotocol/server";
+import { fromJsonSchema, isInputRequiredResult, type JsonSchemaType, type McpServer } from "@modelcontextprotocol/server";
 import { createMcpAdapter, MCP_STATUS_EVENT, type McpStatusSnapshot } from "pi-mcp-adapter";
 import { loadCodexMcpConfig } from "./codex-mcp.ts";
+import { McpElicitationBridge } from "./elicitation-bridge.ts";
 
 type CodingTool = {
   name: string;
@@ -30,10 +31,19 @@ export class PiService {
   readonly #read: CodingTool;
   readonly #tools: Record<PiToolName, CodingTool>;
   readonly #resources: DefaultResourceLoader;
+  readonly #elicitation: McpElicitationBridge;
+  readonly #mcpServerNames: string[];
 
-  private constructor(root: string, resources: DefaultResourceLoader) {
+  private constructor(
+    root: string,
+    resources: DefaultResourceLoader,
+    elicitation: McpElicitationBridge,
+    mcpServerNames: string[],
+  ) {
     this.#root = root;
     this.#resources = resources;
+    this.#elicitation = elicitation;
+    this.#mcpServerNames = mcpServerNames;
     this.#read = createReadTool(root);
     this.#tools = {
       ls: createLsTool(root),
@@ -50,6 +60,7 @@ export class PiService {
       return { mcpServers: {}, settings: { directTools: true } };
     });
     const eventBus = createEventBus();
+    const elicitation = new McpElicitationBridge();
     const enabledServers = Object.entries(config.mcpServers)
       .filter(([, definition]) => definition.disabled !== true)
       .map(([name]) => name);
@@ -66,8 +77,9 @@ export class PiService {
         : [],
     });
     await resources.reload();
+    await startMcpAdapterSession(resources, root, elicitation.ui);
     if (enabledServers.length > 0) await ready;
-    return new PiService(root, resources);
+    return new PiService(root, resources, elicitation, enabledServers);
   }
 
   get readParameters(): JsonSchemaType {
@@ -113,18 +125,24 @@ export class PiService {
         inputSchema: fromJsonSchema(definition.parameters as JsonSchemaType),
       }, async (args, ctx) => {
         try {
-          const result = await definition.execute(
-            crypto.randomUUID(),
-            args,
-            ctx.mcpReq.signal,
-            undefined,
-            {
-              cwd: this.#root,
-              mode: "print",
-              hasUI: false,
-              signal: ctx.mcpReq.signal,
-            } as ExtensionContext,
-          );
+          const run = async (signal: AbortSignal) => definition.execute(
+              crypto.randomUUID(),
+              args,
+              signal,
+              undefined,
+              {
+                cwd: this.#root,
+                mode: "rpc",
+                hasUI: true,
+                ui: this.#elicitation.ui,
+                signal,
+              } as ExtensionContext,
+            );
+          const serverName = resolveMcpServerName(definition.name, this.#mcpServerNames);
+          const result = serverName
+            ? await this.#elicitation.execute(serverName, definition.name, args, ctx, run)
+            : await run(ctx.mcpReq.signal);
+          if (isInputRequiredResult(result)) return result;
           const details = result.details as { error?: unknown } | undefined;
           return {
             content: result.content as any,
@@ -139,6 +157,41 @@ export class PiService {
       });
     }
   }
+}
+
+async function startMcpAdapterSession(
+  resources: DefaultResourceLoader,
+  root: string,
+  ui: ExtensionContext["ui"],
+): Promise<void> {
+  const adapter = resources.getExtensions().extensions.find((extension) => extension.path === "<inline:rce-mcp-adapter>");
+  if (!adapter) return;
+  const context = {
+    cwd: root,
+    mode: "rpc",
+    hasUI: true,
+    ui,
+    model: undefined,
+    modelRegistry: undefined,
+    signal: undefined,
+  } as unknown as ExtensionContext;
+  for (const handler of adapter.handlers.get("session_start") ?? []) {
+    await handler({}, context);
+  }
+}
+
+function resolveMcpServerName(toolName: string, serverNames: string[]): string | undefined {
+  return serverNames
+    .map((serverName) => ({ serverName, prefix: `${sanitizeServerPrefix(serverName)}_` }))
+    .sort((a, b) => b.prefix.length - a.prefix.length)
+    .find(({ prefix }) => toolName.startsWith(prefix))
+    ?.serverName;
+}
+
+function sanitizeServerPrefix(serverName: string): string {
+  return Array.from(serverName, (char) => /^[A-Za-z0-9_-]$/.test(char)
+    ? char
+    : `_${char.codePointAt(0)!.toString(16)}_`).join("");
 }
 
 function waitForMcpDiscovery(eventBus: ReturnType<typeof createEventBus>, expected: string[]): Promise<void> {

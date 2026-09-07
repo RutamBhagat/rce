@@ -27,6 +27,8 @@ At startup, RCE runs `codex mcp list --json` once and converts the effective tra
 
 `pi-mcp-adapter` connects enabled servers to discover tool metadata and caches it. MCP tools are then registered directly, so calls do not pass through a generic JSON-RPC gateway or require the model to translate method names and schemas.
 
+When a downstream MCP tool needs user input or approval, RCE forwards that request through MCP's multi-round-trip `input_required` flow. The original downstream call stays suspended and resumes with the client's `inputResponses`, so approval does not replay the tool operation.
+
 Connector-only Codex app bindings and Codex-specific thread/runtime APIs are intentionally outside this surface. RCE only projects MCP-backed capabilities here.
 
 ## Requirements

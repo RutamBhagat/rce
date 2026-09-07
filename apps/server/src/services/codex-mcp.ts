@@ -43,7 +43,7 @@ export async function loadCodexMcpConfig(root: string): Promise<McpConfig> {
       disableProxyTool: true,
       scriptMode: false,
       sampling: false,
-      elicitation: false,
+      elicitation: true,
       outputGuard: true,
     },
   };
