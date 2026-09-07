@@ -2,39 +2,37 @@
 
 RCE exposes the current project to ChatGPT through an OAuth-protected MCP server.
 
-Think of RCE as a remote bridge to the local Codex CLI runtime, with extra Herdr process controls.
+RCE exposes fast local coding tools backed by Pi, persistent process controls through Herdr, and an optional Codex app-server escape hatch for plugin/MCP capabilities.
 
-RCE starts one `codex app-server` in the project directory. ChatGPT can inspect the exact app-server protocol and call its non-inference runtime methods. This gives access to Codex filesystem, command, skill, plugin, MCP, and other runtime surfaces supported by the installed Codex version.
+For regular filesystem, search, shell, and process work, models should prefer the Pi-backed and Herdr tools. The Codex app-server should only be used when a task requires Codex plugins/MCP or another capability that is not exposed directly.
 
-RCE also adds direct batched reads, Codex-format patching, and persistent interactive processes through [Herdr](https://herdr.dev/).
+RCE also provides direct batched reads and Codex-format patching shortcuts.
 
 > [!IMPORTANT]
 > RCE does not start Codex model inference. It exposes the Codex runtime and control plane, not another coding agent.
 
 ## What RCE exposes
 
-The Codex app-server is the primary control plane.
+Pi and Herdr are the primary path for ordinary coding work. Codex is the plugin/runtime fallback.
 
 | Area | RCE tools | Purpose |
 | --- | --- | --- |
-| Codex app-server | `codex_protocol`, `codex_rpc`, `codex_events`, `codex_respond` | Inspect and use the allowed Codex runtime control plane. |
+| Pi coding tools | `ls`, `find`, `grep`, `write`, `bash` | Fast direct filesystem, search, write, and shell operations. |
+| Pi skills | `list_skills`, `load_skill` | Discover and load local Agent Skills without routing through Codex. |
 | Direct files | `read_many`, `apply_patch` | Read files in batches and apply structured Codex-format patches. |
 | Persistent processes | `process_start`, `process_read`, `process_wait`, `process_send`, `process_info`, `process_stop` | Run and control persistent or interactive commands through Herdr. |
+| Codex app-server | `codex_protocol`, `codex_rpc`, `codex_events`, `codex_respond` | Fallback for Codex plugins/MCP and other Codex-only runtime capabilities. |
 
 At startup, RCE asks the installed Codex binary to generate its experimental app-server JSON schemas. The `codex_protocol` tool reads those schemas. The available RPC surface therefore follows the local Codex version instead of a hard-coded method list.
 
-Typical `codex_rpc` capabilities include:
+Use `codex_rpc` only when the direct tools do not expose the required capability. Typical Codex-only uses include:
 
-- standalone command execution with `command/exec`
-- skill discovery with `skills/list`
 - plugin discovery and inspection with `plugin/*`
 - MCP inventory and direct MCP calls with `mcpServer*`
 - thread and runtime metadata that do not start model execution
 - other non-inference client requests exposed by the installed app-server
 
-For source search, call `command/exec` with `rg` or `rg --files`. Codex also exposes `fuzzyFileSearch` for fuzzy filename search when the installed version supports it.
-
-`read_many` and `apply_patch` remain useful shortcuts for common coding work. They avoid extra app-server RPC discovery for batched reads and structured edits.
+For source search and shell work, use `grep`, `find`, `ls`, or `bash` rather than `codex_rpc`. Use `process_*` when the command must remain interactive or persistent.
 
 ### Methods RCE blocks
 
