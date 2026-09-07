@@ -56,6 +56,9 @@ jobs:
         run: bun run build
         working-directory: .
 
+      - name: Smoke test built CLI
+        run: npm run smoke:dist
+
       - name: Read release version
         id: version
         shell: bash
