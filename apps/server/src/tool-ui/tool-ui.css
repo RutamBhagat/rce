@@ -33,6 +33,48 @@ body { font-size: var(--font-text-sm-size, 14px); line-height: var(--font-text-s
   padding: 12px 14px;
 }
 
+.diff-toggle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.diff-toggle:hover { background: var(--color-background-secondary, rgba(0, 0, 0, 0.025)); }
+
+.diff-toggle:focus-visible {
+  outline: 2px solid var(--color-border-focus, currentColor);
+  outline-offset: -2px;
+}
+
+.diff-heading { min-width: 0; }
+
+.file-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.diff-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.chevron {
+  display: inline-block;
+  color: var(--color-text-tertiary, #777);
+  font-size: 18px;
+  line-height: 1;
+  transform: rotate(0deg);
+  transition: transform 120ms ease;
+}
+
+.chevron.expanded { transform: rotate(180deg); }
+
 .tool-title { font-weight: var(--font-weight-semibold, 600); }
 
 .file-list,
@@ -144,4 +186,8 @@ body { font-size: var(--font-text-sm-size, 14px); line-height: var(--font-text-s
   .tool-header { padding: 10px 12px; }
   .process-meta { padding-inline: 12px; }
   .output-block pre, .text-result { padding-inline: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron { transition: none; }
 }

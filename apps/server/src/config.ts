@@ -12,6 +12,7 @@ export type ConfigKey = keyof RceConfig;
 
 export type CliCommand =
   | { kind: "help" }
+  | { kind: "version" }
   | { kind: "serve"; origin?: string; port?: string; yes: boolean }
   | { kind: "init"; yes: boolean }
   | { kind: "config-get" }
@@ -34,6 +35,7 @@ Options:
   -o, --origin <url>            Public origin for this run.
   -p, --port <port>             Local loopback port for this run.
   -y, --yes                     Accept setup defaults without prompting.
+  -v, --version                 Print the installed RCE version.
   -h, --help                    Show this help.
 
 Precedence:
@@ -150,10 +152,12 @@ export function parseCli(args = process.argv.slice(2)): CliCommand {
       origin: { type: "string", short: "o" },
       port: { type: "string", short: "p" },
       yes: { type: "boolean", short: "y", default: false },
+      version: { type: "boolean", short: "v", default: false },
       help: { type: "boolean", short: "h", default: false },
     },
   });
 
+  if (values.version) return { kind: "version" };
   if (values.help) return { kind: "help" };
   const [command, ...rest] = positionals;
 

@@ -84,26 +84,34 @@ async function validatePatchPaths(root: string, patchText: string): Promise<void
   }
 }
 
+export async function applyCodexPatch(
+  root: string,
+  patch: string,
+  signal?: AbortSignal,
+): Promise<{ stdout: string; stderr: string }> {
+  await validatePatchPaths(root, patch);
+  return exec(process.execPath, [
+    codexEntrypoint,
+    "--codex-run-as-apply-patch",
+    patch,
+  ], {
+    cwd: root,
+    env: { ...process.env, CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS: "1" },
+    signal,
+    maxBuffer: 4 * 1024 * 1024,
+  });
+}
+
 export const applyPatchTool: ToolPlugin = {
   register(server, context) {
     registerRceTool(server, "apply_patch", {
-      description: "Use this when an edit spans multiple files or benefits from one structured incremental patch. Applies Codex-format add, update, move, and delete operations across one or more text files.",
+      description: "Apply one Codex-compatible patch across one or more text files. Pass the complete *** Begin Patch ... *** End Patch payload in patch. Paths must be relative to the RCE root. Supports *** Add File, *** Update File with @@ context hunks, optional *** Move to, and *** Delete File. Use this for incremental source edits; use write for intentional full-file replacement.",
       inputSchema: fromJsonSchema<{ patch: string }>(schema as JsonSchemaType),
     }, async ({ patch }, ctx) => {
       try {
-        await validatePatchPaths(context.root, patch);
         const mutations = extractPatchMutations(patch);
         const before = await snapshotMutations(context.root, mutations);
-        const { stdout, stderr } = await exec(process.execPath, [
-          codexEntrypoint,
-          "--codex-run-as-apply-patch",
-          patch,
-        ], {
-          cwd: context.root,
-          env: { ...process.env, CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS: "1" },
-          signal: ctx.mcpReq.signal,
-          maxBuffer: 4 * 1024 * 1024,
-        });
+        const { stdout, stderr } = await applyCodexPatch(context.root, patch, ctx.mcpReq.signal);
         const after = await snapshotMutations(context.root, mutations);
         const text = [stdout.trim(), stderr.trim()].filter(Boolean).join("\n");
         return {

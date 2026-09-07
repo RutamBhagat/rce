@@ -9,11 +9,16 @@ import {
 } from "./config.ts";
 import { CONFIG_FILE, loadStoredConfig, resetStoredConfig, saveStoredConfig } from "./config-store.ts";
 import { runSetup } from "./setup.ts";
+import { VERSION } from "./version.ts";
 
 async function main(): Promise<void> {
   const command = parseCli();
   if (command.kind === "help") {
     process.stdout.write(HELP_TEXT);
+    return;
+  }
+  if (command.kind === "version") {
+    process.stdout.write(`rce-mcp ${VERSION}\n`);
     return;
   }
 

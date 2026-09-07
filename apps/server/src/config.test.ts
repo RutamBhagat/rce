@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   completeStoredConfig,
+  parseCli,
   resolveServeConfig,
   setStoredValue,
   type CliCommand,
@@ -67,4 +68,9 @@ test("persisting a port moves only a default loopback origin", () => {
     setStoredValue({ port: 6767, origin: "https://rce.example.com" }, "port", "7000"),
     { port: 7000, origin: "https://rce.example.com" },
   );
+});
+
+test("version flags select the version command", () => {
+  assert.deepEqual(parseCli(["--version"]), { kind: "version" });
+  assert.deepEqual(parseCli(["-v"]), { kind: "version" });
 });

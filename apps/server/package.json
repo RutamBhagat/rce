@@ -1,6 +1,6 @@
 {
   "name": "rce-mcp",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "description": "Run rce in a project to expose OAuth-protected MCP coding tools for ChatGPT over a stable HTTPS tunnel.",
   "type": "module",
   "bin": {

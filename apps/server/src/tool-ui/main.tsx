@@ -41,7 +41,7 @@ function RceToolApp() {
       createdApp.ontoolresult = (nextResult) => {
         const typedResult = nextResult as ToolResult;
         const measured = startedAt.current === undefined ? undefined : performance.now() - startedAt.current;
-        setElapsedMs(measured ?? serverDuration(typedResult) ?? 0);
+        setElapsedMs(serverDuration(typedResult) ?? measured ?? 0);
         setResult(typedResult);
         setStatus(typedResult.isError ? "failed" : "completed");
       };
@@ -105,36 +105,51 @@ function ToolRenderer({ toolName, input, result, theme }: {
 }
 
 function DiffTool({ diff, theme }: { diff?: Record<string, unknown>; theme: "light" | "dark" }) {
+  const [expanded, setExpanded] = useState(true);
   const files = Array.isArray(diff?.files) ? diff.files.map(asRecord).filter(Boolean) as Record<string, unknown>[] : [];
   const additions = numberValue(diff?.additions);
   const deletions = numberValue(diff?.deletions);
   const patch = typeof diff?.patch === "string" ? diff.patch : "";
   const title = files.length === 1 ? "Edit File" : "Edit Files";
 
+  useEffect(() => {
+    setExpanded(true);
+  }, [patch]);
+
   if (!diff) return <PendingCard title="Edit File" />;
 
   return (
     <section className="tool-card">
-      <header className="tool-header">
-        <div>
-          <div className="tool-title">{title}</div>
-          <div className="file-list">
+      <button
+        className="tool-header diff-toggle"
+        type="button"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((current) => !current)}
+      >
+        <span className="diff-heading">
+          <span className="tool-title">{title}</span>
+          <span className="file-list">
             {files.map((file, index) => (
-              <div key={`${String(file.path)}-${index}`}>
+              <span key={`${String(file.path)}-${index}`}>
                 {file.status === "renamed" && file.oldPath !== file.newPath
                   ? `${String(file.oldPath)} → ${String(file.newPath)}`
                   : String(file.path ?? "file")}
-              </div>
+              </span>
             ))}
-          </div>
+          </span>
+        </span>
+        <span className="diff-actions">
+          <span className="diff-stats"><span>+{additions}</span> <span>−{deletions}</span></span>
+          <span className={`chevron${expanded ? " expanded" : ""}`} aria-hidden="true">⌄</span>
+        </span>
+      </button>
+      {expanded && (
+        <div className="diff-frame">
+          {patch
+            ? <PatchDiff patch={patch} disableWorkerPool options={{ diffStyle: "unified", theme: theme === "dark" ? "pierre-dark" : "pierre-light" }} />
+            : <div className="empty-state">No textual content changes.</div>}
         </div>
-        <div className="diff-stats"><span>+{additions}</span> <span>−{deletions}</span></div>
-      </header>
-      <div className="diff-frame">
-        {patch
-          ? <PatchDiff patch={patch} disableWorkerPool options={{ diffStyle: "unified", theme: theme === "dark" ? "pierre-dark" : "pierre-light" }} />
-          : <div className="empty-state">No textual content changes.</div>}
-      </div>
+      )}
     </section>
   );
 }
@@ -203,7 +218,7 @@ function DetailsViewer({ data, theme, initiallyOpen = false }: { data: Record<st
 }
 
 function ExecutionStatus({ status, elapsedMs, serverDurationMs }: { status: ToolStatus; elapsedMs: number; serverDurationMs?: number }) {
-  const duration = elapsedMs || serverDurationMs || 0;
+  const duration = status === "running" ? elapsedMs : (serverDurationMs ?? elapsedMs);
   const label = status === "running" ? "Running"
     : status === "completed" ? "Completed"
       : status === "failed" ? "Failed"

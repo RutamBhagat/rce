@@ -16,6 +16,7 @@ import { fromJsonSchema, isInputRequiredResult, type JsonSchemaType, type McpSer
 import { createMcpAdapter, MCP_STATUS_EVENT, type McpStatusSnapshot } from "pi-mcp-adapter";
 import { loadCodexMcpConfig } from "./codex-mcp.ts";
 import { McpElicitationBridge } from "./elicitation-bridge.ts";
+import { registerRceTool } from "../tools/app-tool.ts";
 
 type CodingTool = {
   name: string;
@@ -117,7 +118,7 @@ export class PiService {
     }
 
     for (const definition of definitions.values()) {
-      server.registerTool(definition.name, {
+      registerRceTool(server, definition.name, {
         description: definition.description,
         inputSchema: fromJsonSchema(definition.parameters as JsonSchemaType),
       }, async (args, ctx) => {
