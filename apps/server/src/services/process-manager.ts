@@ -45,6 +45,8 @@ export class ProcessManager {
   readonly #label: string;
   readonly #controlLabel = "rce-control";
   readonly #launchFingerprints = new Map<string, LaunchFingerprint>();
+  readonly #commands = new Map<string, string>();
+  readonly #startedAt = new Map<string, number>();
   #pending: Promise<unknown> = Promise.resolve();
 
   static create(root: string, origin: string): ProcessManager | undefined {
@@ -89,6 +91,8 @@ export class ProcessManager {
         throw error;
       }
       this.#launchFingerprints.set(pane.pane_id, fingerprint(command));
+      this.#commands.set(pane.pane_id, command);
+      this.#startedAt.set(pane.pane_id, performance.now());
       return pane.pane_id;
     });
   }
@@ -103,14 +107,21 @@ export class ProcessManager {
     });
   }
 
-  async info(handle: string): Promise<ProcessInfoResult & { idle: boolean }> {
+  async info(handle: string): Promise<ProcessInfoResult & { idle: boolean; command?: string; elapsedMs?: number }> {
     return this.#queue(async () => {
       await this.#requireProcessPane(handle);
       const result = await herdr<ProcessInfoResult>(["pane", "process-info", "--pane", handle]);
       const info = result.process_info;
       const idle = info.foreground_process_group_id === info.shell_pid
         && info.foreground_processes.every((process) => process.pid === info.shell_pid);
-      return { ...result, idle };
+      const startedAt = this.#startedAt.get(handle);
+      const command = this.#commands.get(handle);
+      return {
+        ...result,
+        idle,
+        ...(command === undefined ? {} : { command }),
+        ...(startedAt === undefined ? {} : { elapsedMs: performance.now() - startedAt }),
+      };
     });
   }
 
@@ -147,6 +158,8 @@ export class ProcessManager {
       const { workspace } = await this.#requireProcessPane(handle);
       await herdr(["pane", "close", handle]);
       this.#launchFingerprints.delete(handle);
+      this.#commands.delete(handle);
+      this.#startedAt.delete(handle);
       const remaining = await this.#listPanes(workspace.workspace_id);
       if (remaining.every((pane) => pane.label === this.#controlLabel)) {
         await herdr(["workspace", "close", workspace.workspace_id]);
@@ -180,12 +193,16 @@ export class ProcessManager {
     const workspace = await this.#findWorkspace();
     if (!workspace) {
       this.#launchFingerprints.delete(handle);
+      this.#commands.delete(handle);
+      this.#startedAt.delete(handle);
       throw new Error("Unknown, closed, or foreign process handle.");
     }
     const panes = await this.#listPanes(workspace.workspace_id);
     const pane = panes.find((candidate) => candidate.pane_id === handle && candidate.workspace_id === workspace.workspace_id);
     if (!pane) {
       this.#launchFingerprints.delete(handle);
+      this.#commands.delete(handle);
+      this.#startedAt.delete(handle);
       throw new Error("Unknown, closed, or foreign process handle.");
     }
     if (pane.label === this.#controlLabel) throw new Error("The control pane is not a process handle.");

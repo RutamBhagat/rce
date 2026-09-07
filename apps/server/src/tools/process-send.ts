@@ -1,6 +1,7 @@
 import { fromJsonSchema, type JsonSchemaType } from "@modelcontextprotocol/server";
+import { registerRceTool } from "./app-tool.ts";
 import type { ToolPlugin } from "./types.ts";
-import { textResult, toolError } from "./utils.ts";
+import { toolError } from "./utils.ts";
 
 const schema = {
   oneOf: [
@@ -30,13 +31,17 @@ type Args = { handle: string; text?: string; keys?: string[] };
 export const processSendTool: ToolPlugin = {
   available: (context) => context.processes !== undefined,
   register(server, context) {
-    server.registerTool("process_send", {
+    registerRceTool(server, "process_send", {
       description: "Send literal text without Enter, or an ordered array of terminal keys/chords such as Enter and ctrl+c. Specify exactly one of text or keys.",
       inputSchema: fromJsonSchema<Args>(schema as JsonSchemaType),
     }, async ({ handle, text, keys }) => {
       try {
         await context.processes!.send(handle, text === undefined ? { keys: keys! } : { text });
-        return textResult(`Sent input to process ${handle}.`);
+        const info = await context.processes!.info(handle);
+        return {
+          content: [{ type: "text" as const, text: `Sent input to process ${handle}.` }],
+          structuredContent: { process: { kind: "send", handle, state: info.idle ? "idle" : "running", elapsedMs: info.elapsedMs, input: text === undefined ? { keys } : { text }, details: info } },
+        };
       } catch (error) {
         return toolError(error);
       }

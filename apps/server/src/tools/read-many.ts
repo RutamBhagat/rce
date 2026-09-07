@@ -5,6 +5,7 @@ import { access, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { registerRceTool } from "./app-tool.ts";
 import type { ToolPlugin } from "./types.ts";
 
 const DEFAULT_MAX_LINES = 2_000;
@@ -45,10 +46,10 @@ type TruncationResult = {
 
 export const readManyTool: ToolPlugin = {
   register(server, context) {
-    server.registerTool("read_many", {
+    registerRceTool(server, "read_many", {
       description: `Efficiently read one or more files or line ranges in one call. Relative paths resolve from the RCE project root. Text uses 1-indexed offset/limit and truncates at ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB. Supports png, jpeg, gif, and webp images as attachments.`,
       inputSchema: fromJsonSchema<{ reads: ReadInput[] }>(schema as JsonSchemaType),
-    }, async ({ reads }, ctx) => {
+    }, async ({ reads }: { reads: ReadInput[] }, ctx) => {
       const results = await Promise.all(reads.map(async (input) => {
         try {
           return { input, content: await readOne(context.root, input, ctx.mcpReq.signal) };

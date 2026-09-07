@@ -1,6 +1,7 @@
 import { fromJsonSchema, type JsonSchemaType } from "@modelcontextprotocol/server";
+import { registerRceTool } from "./app-tool.ts";
 import type { ToolPlugin } from "./types.ts";
-import { textResult, toolError } from "./utils.ts";
+import { toolError } from "./utils.ts";
 
 const schema = {
   type: "object",
@@ -12,13 +13,16 @@ const schema = {
 export const processStopTool: ToolPlugin = {
   available: (context) => context.processes !== undefined,
   register(server, context) {
-    server.registerTool("process_stop", {
+    registerRceTool(server, "process_stop", {
       description: "Stop a process by closing its pane. Close its RCE workspace when no child panes remain.",
       inputSchema: fromJsonSchema<{ handle: string }>(schema as JsonSchemaType),
     }, async ({ handle }) => {
       try {
         await context.processes!.stop(handle);
-        return textResult(`Stopped process ${handle}.`);
+        return {
+          content: [{ type: "text" as const, text: `Stopped process ${handle}.` }],
+          structuredContent: { process: { kind: "stop", handle, state: "stopped" } },
+        };
       } catch (error) {
         return toolError(error);
       }

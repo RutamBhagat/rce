@@ -5,6 +5,8 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { promisify } from "node:util";
 import type { ToolPlugin } from "./types.ts";
+import { registerRceTool } from "./app-tool.ts";
+import { buildDiffPayload, extractPatchMutations, snapshotMutations } from "./file-diff.ts";
 import { toolError } from "./utils.ts";
 
 const exec = promisify(execFile);
@@ -84,12 +86,14 @@ async function validatePatchPaths(root: string, patchText: string): Promise<void
 
 export const applyPatchTool: ToolPlugin = {
   register(server, context) {
-    server.registerTool("apply_patch", {
+    registerRceTool(server, "apply_patch", {
       description: "Use this when an edit spans multiple files or benefits from one structured incremental patch. Applies Codex-format add, update, move, and delete operations across one or more text files.",
       inputSchema: fromJsonSchema<{ patch: string }>(schema as JsonSchemaType),
     }, async ({ patch }, ctx) => {
       try {
         await validatePatchPaths(context.root, patch);
+        const mutations = extractPatchMutations(patch);
+        const before = await snapshotMutations(context.root, mutations);
         const { stdout, stderr } = await exec(process.execPath, [
           codexEntrypoint,
           "--codex-run-as-apply-patch",
@@ -100,8 +104,14 @@ export const applyPatchTool: ToolPlugin = {
           signal: ctx.mcpReq.signal,
           maxBuffer: 4 * 1024 * 1024,
         });
+        const after = await snapshotMutations(context.root, mutations);
         const text = [stdout.trim(), stderr.trim()].filter(Boolean).join("\n");
-        return { content: [{ type: "text" as const, text: text || "Patch applied." }] };
+        return {
+          content: [{ type: "text" as const, text: text || "Patch applied." }],
+          structuredContent: {
+            diff: buildDiffPayload(context.root, mutations, before, after),
+          },
+        };
       } catch (error) {
         const stderr = error && typeof error === "object" && "stderr" in error && typeof error.stderr === "string"
           ? error.stderr.trim()

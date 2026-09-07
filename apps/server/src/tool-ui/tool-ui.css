@@ -1,0 +1,147 @@
+:root {
+  color-scheme: light dark;
+  font-family: var(--font-sans, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  color: var(--color-text-primary, #202123);
+  background: transparent;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { margin: 0; min-width: 0; background: transparent; }
+
+body { font-size: var(--font-text-sm-size, 14px); line-height: var(--font-text-sm-line-height, 1.45); }
+
+.app-shell {
+  width: 100%;
+  min-width: 0;
+  padding: 2px 0;
+}
+
+.tool-card {
+  min-width: 0;
+  border: 1px solid var(--color-border-secondary, rgba(0, 0, 0, 0.12));
+  border-radius: var(--border-radius-lg, 12px);
+  background: var(--color-background-primary, transparent);
+  overflow: hidden;
+}
+
+.tool-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+}
+
+.tool-title { font-weight: var(--font-weight-semibold, 600); }
+
+.file-list,
+.command {
+  margin-top: 3px;
+  color: var(--color-text-secondary, #666);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--font-text-xs-size, 12px);
+  overflow-wrap: anywhere;
+}
+
+.diff-stats {
+  flex: 0 0 auto;
+  color: var(--color-text-secondary, #666);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--font-text-xs-size, 12px);
+  white-space: nowrap;
+}
+
+.diff-stats span:first-child { color: var(--color-text-success, #16803c); }
+.diff-stats span:last-child { color: var(--color-text-danger, #c33131); }
+
+.diff-frame {
+  min-width: 0;
+  overflow-x: auto;
+  border-top: 1px solid var(--color-border-secondary, rgba(0, 0, 0, 0.1));
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 12px;
+}
+
+.diff-frame > * { min-width: 0; }
+
+.process-meta {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0 14px 12px;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--font-text-xs-size, 12px);
+}
+
+.process-meta dt { color: var(--color-text-tertiary, #888); }
+.process-meta dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+
+.section-label {
+  margin: 0 14px 6px;
+  color: var(--color-text-secondary, #666);
+  font-size: var(--font-text-xs-size, 12px);
+  font-weight: var(--font-weight-medium, 500);
+}
+
+.output-block pre,
+.text-result {
+  margin: 0;
+  padding: 11px 14px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: normal;
+  tab-size: 2;
+  border-top: 1px solid var(--color-border-secondary, rgba(0, 0, 0, 0.1));
+  background: var(--color-background-secondary, rgba(0, 0, 0, 0.025));
+  color: var(--color-text-primary, inherit);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--font-text-xs-size, 12px);
+  line-height: 1.5;
+}
+
+.output-block .section-label + pre { border-top: 0; }
+
+.details {
+  border-top: 1px solid var(--color-border-secondary, rgba(0, 0, 0, 0.1));
+  color: var(--color-text-secondary, #666);
+}
+
+.details summary {
+  cursor: pointer;
+  padding: 9px 14px;
+  user-select: none;
+  font-size: var(--font-text-xs-size, 12px);
+}
+
+.json-view {
+  overflow: auto;
+  padding: 0 14px 12px;
+  color: var(--color-text-primary, inherit);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 12px;
+}
+
+.empty-state,
+.error {
+  padding: 14px;
+  color: var(--color-text-secondary, #666);
+}
+
+.error { color: var(--color-text-danger, #b42318); }
+
+.execution-status {
+  padding: 7px 2px 0;
+  color: var(--color-text-tertiary, #777);
+  font-size: var(--font-text-xs-size, 12px);
+}
+
+.execution-status.failed,
+.execution-status.cancelled { color: var(--color-text-danger, #b42318); }
+
+@media (max-width: 480px) {
+  .tool-header { padding: 10px 12px; }
+  .process-meta { padding-inline: 12px; }
+  .output-block pre, .text-result { padding-inline: 12px; }
+}

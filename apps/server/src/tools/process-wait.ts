@@ -1,6 +1,7 @@
 import { fromJsonSchema, type JsonSchemaType } from "@modelcontextprotocol/server";
+import { registerRceTool } from "./app-tool.ts";
 import type { ToolPlugin } from "./types.ts";
-import { textResult, toolError } from "./utils.ts";
+import { toolError } from "./utils.ts";
 
 const common = {
   handle: { type: "string", minLength: 1 },
@@ -29,13 +30,18 @@ type Args = { handle: string; lines?: number; match?: string; regex?: string; ti
 export const processWaitTool: ToolPlugin = {
   available: (context) => context.processes !== undefined,
   register(server, context) {
-    server.registerTool("process_wait", {
+    registerRceTool(server, "process_wait", {
       description: "Search current recent unwrapped output immediately, then wait for a literal substring or Rust regex. Existing output is eligible, but a match against the echoed process_start command is rejected. Timeout is in milliseconds. Omit timeout to wait indefinitely. Specify exactly one of match or regex.",
       inputSchema: fromJsonSchema<Args>(schema as JsonSchemaType),
     }, async ({ handle, lines, match, regex, timeout }, ctx) => {
       try {
         const result = await context.processes!.wait(handle, { lines, match, regex, timeout }, ctx.mcpReq.signal);
-        return textResult(JSON.stringify(result));
+        const info = await context.processes!.info(handle);
+        const text = result.matched_line ? `Matched: ${result.matched_line}` : "Process wait completed.";
+        return {
+          content: [{ type: "text" as const, text }],
+          structuredContent: { process: { kind: "wait", handle, state: info.idle ? "idle" : "running", elapsedMs: info.elapsedMs, matchedLine: result.matched_line, details: result } },
+        };
       } catch (error) {
         return toolError(error);
       }

@@ -1,6 +1,7 @@
 import { fromJsonSchema, type JsonSchemaType } from "@modelcontextprotocol/server";
+import { registerRceTool } from "./app-tool.ts";
 import type { ToolPlugin } from "./types.ts";
-import { textResult, toolError } from "./utils.ts";
+import { toolError } from "./utils.ts";
 
 const schema = {
   type: "object",
@@ -12,12 +13,17 @@ const schema = {
 export const processInfoTool: ToolPlugin = {
   available: (context) => context.processes !== undefined,
   register(server, context) {
-    server.registerTool("process_info", {
+    registerRceTool(server, "process_info", {
       description: "Read a structured Herdr process-state snapshot for a process pane, including shell PID, foreground process group, foreground processes, and a derived idle flag. idle means the pane shell is foreground at this instant; it is not a completion event.",
       inputSchema: fromJsonSchema<{ handle: string }>(schema as JsonSchemaType),
     }, async ({ handle }) => {
       try {
-        return textResult(JSON.stringify(await context.processes!.info(handle)));
+        const info = await context.processes!.info(handle);
+        const state = info.idle ? "idle" : "running";
+        return {
+          content: [{ type: "text" as const, text: `Process ${handle}: ${state}.` }],
+          structuredContent: { process: { kind: "info", handle, state, elapsedMs: info.elapsedMs, idle: info.idle, details: info } },
+        };
       } catch (error) {
         return toolError(error);
       }

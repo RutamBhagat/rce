@@ -10,6 +10,7 @@ import {
   getAgentDir,
   type ExtensionContext,
   type ReadToolInput,
+  type WriteToolInput,
 } from "@earendil-works/pi-coding-agent";
 import { fromJsonSchema, isInputRequiredResult, type JsonSchemaType, type McpServer } from "@modelcontextprotocol/server";
 import { createMcpAdapter, MCP_STATUS_EVENT, type McpStatusSnapshot } from "pi-mcp-adapter";
@@ -86,26 +87,22 @@ export class PiService {
     return this.#read.parameters as JsonSchemaType;
   }
 
+  description(name: PiToolName): string {
+    return this.#tools[name].description;
+  }
+
+  parameters(name: PiToolName): JsonSchemaType {
+    return this.#tools[name].parameters as JsonSchemaType;
+  }
+
   async read(args: ReadToolInput, signal?: AbortSignal): Promise<PiResult> {
     return this.#read.execute(crypto.randomUUID(), args, signal);
   }
 
-  register(server: McpServer, name: PiToolName): void {
-    const tool = this.#tools[name];
-    server.registerTool(tool.name, {
-      description: tool.description,
-      inputSchema: fromJsonSchema(tool.parameters as JsonSchemaType),
-    }, async (args, ctx) => {
-      try {
-        const result = await tool.execute(crypto.randomUUID(), args, ctx.mcpReq.signal);
-        return { content: result.content as any };
-      } catch (error) {
-        return {
-          isError: true,
-          content: [{ type: "text" as const, text: error instanceof Error ? error.message : String(error) }],
-        };
-      }
-    });
+  async execute(name: "write", args: WriteToolInput, signal?: AbortSignal): Promise<PiResult>;
+  async execute(name: PiToolName, args: any, signal?: AbortSignal): Promise<PiResult>;
+  async execute(name: PiToolName, args: any, signal?: AbortSignal): Promise<PiResult> {
+    return this.#tools[name].execute(crypto.randomUUID(), args, signal);
   }
 
   registerExtensions(server: McpServer): void {

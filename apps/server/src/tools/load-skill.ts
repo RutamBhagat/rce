@@ -1,4 +1,5 @@
 import { fromJsonSchema, type JsonSchemaType } from "@modelcontextprotocol/server";
+import { registerRceTool } from "./app-tool.ts";
 import type { ToolPlugin } from "./types.ts";
 import { textResult, toolError } from "./utils.ts";
 
@@ -17,7 +18,7 @@ const schema = {
 
 export const loadSkillTool: ToolPlugin = {
   register(server, context) {
-    server.registerTool("load_skill", {
+    registerRceTool(server, "load_skill", {
       description: context.skills.toolDescription,
       inputSchema: fromJsonSchema<{ name: string }>(schema as JsonSchemaType),
     }, async ({ name }) => {
