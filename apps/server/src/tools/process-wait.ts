@@ -31,7 +31,7 @@ export const processWaitTool: ToolPlugin = {
   available: (context) => context.processes !== undefined,
   register(server, context) {
     registerRceTool(server, "process_wait", {
-      description: "Search current recent unwrapped output immediately, then wait for a literal substring or Rust regex. Existing output is eligible, but a match against the echoed process_start command is rejected. Timeout is in milliseconds. Omit timeout to wait indefinitely. Specify exactly one of match or regex.",
+      description: "Class 2 Herdr tool. Search current recent unwrapped output immediately, then wait for a literal substring or Rust regex. Existing output is eligible, but a match against the echoed process_start command is rejected. Timeout is in milliseconds. Omit timeout to wait indefinitely. Specify exactly one of match or regex. Use only for an existing persistent/interactive Herdr process, not as a Class 1 fallback.",
       inputSchema: fromJsonSchema<Args>(schema as JsonSchemaType),
     }, async ({ handle, lines, match, regex, timeout }, ctx) => {
       try {

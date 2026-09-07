@@ -7,7 +7,7 @@ import type { ToolPlugin } from "./types.ts";
 export const writeTool: ToolPlugin = {
   register(server, context) {
     registerRceTool(server, "write", {
-      description: context.pi.description("write"),
+      description: `Class 1 core tool. ${context.pi.description("write")} If writing fails or the result is unavailable, retry through the Class 1 bash tool.`,
       inputSchema: fromJsonSchema<WriteToolInput>(context.pi.parameters("write")),
     }, async (args: WriteToolInput, ctx) => {
       const mutation: FileMutation = { beforePath: args.path, afterPath: args.path };
@@ -17,6 +17,7 @@ export const writeTool: ToolPlugin = {
       return {
         content: result.content as any,
         structuredContent: {
+          output: result.content,
           diff: buildDiffPayload(context.root, [mutation], before, after),
         },
       };

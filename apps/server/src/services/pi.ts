@@ -119,7 +119,7 @@ export class PiService {
 
     for (const definition of definitions.values()) {
       const description = [
-        "Manual-only extension tool. Invoke only when the user explicitly asks to use this tool, its backing extension/service, or the capability it provides; do not call it proactively based only on relevance.",
+        "Class 4 manual-only Pi MCP plugin/extension tool. Invoke only when the user explicitly asks to use this tool, its backing extension/service, or the capability it provides; do not call it proactively based only on relevance. Never use it as a fallback for a Class 1 or Class 2 failure.",
         definition.description,
       ].filter(Boolean).join(" ");
       registerRceTool(server, definition.name, {

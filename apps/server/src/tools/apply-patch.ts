@@ -105,7 +105,7 @@ export async function applyCodexPatch(
 export const applyPatchTool: ToolPlugin = {
   register(server, context) {
     registerRceTool(server, "apply_patch", {
-      description: "Apply one Codex-compatible patch across one or more text files. Pass the complete *** Begin Patch ... *** End Patch payload in patch. Paths must be relative to the RCE root. Supports *** Add File, *** Update File with @@ context hunks, optional *** Move to, and *** Delete File. Use this for incremental source edits; use write for intentional full-file replacement.",
+      description: "Class 1 core tool. Apply one Codex-compatible patch across one or more text files. Pass the complete *** Begin Patch ... *** End Patch payload in patch. Paths must be relative to the RCE root. Supports *** Add File, *** Update File with @@ context hunks, optional *** Move to, and *** Delete File. Use this for incremental source edits; use write for intentional full-file replacement. If patching fails or the result is unavailable, retry through the Class 1 bash tool.",
       inputSchema: fromJsonSchema<{ patch: string }>(schema as JsonSchemaType),
     }, async ({ patch }, ctx) => {
       try {
@@ -117,6 +117,7 @@ export const applyPatchTool: ToolPlugin = {
         return {
           content: [{ type: "text" as const, text: text || "Patch applied." }],
           structuredContent: {
+            output: text || "Patch applied.",
             diff: buildDiffPayload(context.root, mutations, before, after),
           },
         };

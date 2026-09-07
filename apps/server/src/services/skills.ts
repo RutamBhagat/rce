@@ -26,7 +26,7 @@ export class SkillService {
   }
 
   get toolDescription(): string {
-    return "Load the full instructions for a named installed Agent Skill. Manual-only: invoke this tool only when the user explicitly asks to load or use that skill; do not select skills automatically based on relevance. Use list_skills first only if the user explicitly asks to discover available skills.";
+    return "Class 3 manual-only tool. Load the full instructions for a named installed Agent Skill. Invoke this tool only when the user explicitly asks to load or use that skill; do not select skills automatically based on relevance. Use list_skills first only if the user explicitly asks to discover available skills.";
   }
 
   list(): string {

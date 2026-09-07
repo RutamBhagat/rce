@@ -14,7 +14,7 @@ export const processInfoTool: ToolPlugin = {
   available: (context) => context.processes !== undefined,
   register(server, context) {
     registerRceTool(server, "process_info", {
-      description: "Read a structured Herdr process-state snapshot for a process pane, including shell PID, foreground process group, foreground processes, and a derived idle flag. idle means the pane shell is foreground at this instant; it is not a completion event.",
+      description: "Class 2 Herdr tool. Read a structured Herdr process-state snapshot for a process pane, including shell PID, foreground process group, foreground processes, and a derived idle flag. idle means the pane shell is foreground at this instant; it is not a completion event.",
       inputSchema: fromJsonSchema<{ handle: string }>(schema as JsonSchemaType),
     }, async ({ handle }) => {
       try {

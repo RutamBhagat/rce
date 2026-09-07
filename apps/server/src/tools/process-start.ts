@@ -14,7 +14,7 @@ export const processStartTool: ToolPlugin = {
   available: (context) => context.processes !== undefined,
   register(server, context) {
     registerRceTool(server, "process_start", {
-      description: "Start a persistent or interactive shell command in the project using Herdr and return its pane handle. Prefer Codex command/exec for simple one-shot commands; use process_* when state, interaction, or long-running output must persist across calls.",
+      description: "Class 2 Herdr tool. Start a persistent or interactive shell command in the project using Herdr and return its pane handle. Use process_* only when state, interaction, or long-running output must persist across calls; do not use Herdr as a fallback for ordinary Class 1 one-shot commands.",
       inputSchema: fromJsonSchema<{ command: string }>(schema as JsonSchemaType),
     }, async ({ command }) => {
       try {

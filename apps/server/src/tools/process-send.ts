@@ -32,7 +32,7 @@ export const processSendTool: ToolPlugin = {
   available: (context) => context.processes !== undefined,
   register(server, context) {
     registerRceTool(server, "process_send", {
-      description: "Send literal text without Enter, or an ordered array of terminal keys/chords such as Enter and ctrl+c. Specify exactly one of text or keys.",
+      description: "Class 2 Herdr tool. Send literal text without Enter, or an ordered array of terminal keys/chords such as Enter and ctrl+c to an existing Herdr process. Specify exactly one of text or keys. Use only for an existing persistent/interactive Herdr process, not as a Class 1 fallback.",
       inputSchema: fromJsonSchema<Args>(schema as JsonSchemaType),
     }, async ({ handle, text, keys }) => {
       try {
