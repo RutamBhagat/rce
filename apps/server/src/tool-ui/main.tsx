@@ -5,7 +5,8 @@ import {
   type McpUiHostContext,
 } from "@modelcontextprotocol/ext-apps";
 import { useApp } from "@modelcontextprotocol/ext-apps/react";
-import { PatchDiff } from "@pierre/diffs/react";
+import { parsePatchFiles } from "@pierre/diffs";
+import { FileDiff } from "@pierre/diffs/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { JsonView, collapseAllNested, darkStyles, defaultStyles } from "react-json-view-lite";
@@ -105,15 +106,23 @@ function ToolRenderer({ toolName, input, result, theme }: {
 }
 
 function DiffTool({ diff, theme }: { diff?: Record<string, unknown>; theme: "light" | "dark" }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const files = Array.isArray(diff?.files) ? diff.files.map(asRecord).filter(Boolean) as Record<string, unknown>[] : [];
   const additions = numberValue(diff?.additions);
   const deletions = numberValue(diff?.deletions);
   const patch = typeof diff?.patch === "string" ? diff.patch : "";
   const title = files.length === 1 ? "Edit File" : "Edit Files";
+  const parsedFiles = useMemo(() => {
+    if (!patch) return [];
+    try {
+      return parsePatchFiles(patch).flatMap((parsedPatch) => parsedPatch.files);
+    } catch {
+      return [];
+    }
+  }, [patch]);
 
   useEffect(() => {
-    setExpanded(true);
+    setExpanded(false);
   }, [patch]);
 
   if (!diff) return <PendingCard title="Edit File" />;
@@ -121,7 +130,7 @@ function DiffTool({ diff, theme }: { diff?: Record<string, unknown>; theme: "lig
   return (
     <section className="tool-card">
       <button
-        className="tool-header diff-toggle"
+        className="tool-header tool-toggle"
         type="button"
         aria-expanded={expanded}
         onClick={() => setExpanded((current) => !current)}
@@ -145,9 +154,17 @@ function DiffTool({ diff, theme }: { diff?: Record<string, unknown>; theme: "lig
       </button>
       {expanded && (
         <div className="diff-frame">
-          {patch
-            ? <PatchDiff patch={patch} disableWorkerPool options={{ diffStyle: "unified", theme: theme === "dark" ? "pierre-dark" : "pierre-light" }} />
-            : <div className="empty-state">No textual content changes.</div>}
+          {patch && parsedFiles.length > 0
+            ? parsedFiles.map((fileDiff, index) => (
+              <FileDiff
+                key={index}
+                fileDiff={fileDiff}
+                options={{ diffStyle: "unified", theme: theme === "dark" ? "pierre-dark" : "pierre-light" }}
+              />
+            ))
+            : patch
+              ? <pre className="text-result">{patch}</pre>
+              : <div className="empty-state">No textual content changes.</div>}
         </div>
       )}
     </section>
@@ -159,6 +176,7 @@ function ProcessTool({ input, process, theme }: {
   process?: Record<string, unknown>;
   theme: "light" | "dark";
 }) {
+  const [expanded, setExpanded] = useState(false);
   const details = asRecord(process?.details);
   const handle = stringValue(process?.handle ?? input.handle);
   const command = stringValue(process?.command ?? input.command ?? details?.command);
@@ -167,27 +185,42 @@ function ProcessTool({ input, process, theme }: {
   const output = stringValue(process?.output);
   const matchedLine = stringValue(process?.matchedLine);
 
+  useEffect(() => {
+    setExpanded(false);
+  }, [process]);
+
   return (
     <section className="tool-card">
-      <header className="tool-header process-header">
+      <button
+        className="tool-header tool-toggle process-header"
+        type="button"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((current) => !current)}
+      >
         <div>
           <div className="tool-title">Process</div>
           {command && <div className="command">{command}</div>}
         </div>
-      </header>
-      <dl className="process-meta">
-        {handle && <><dt>handle</dt><dd>{handle}</dd></>}
-        {state && <><dt>state</dt><dd>{state}</dd></>}
-        {processElapsed > 0 && <><dt>elapsed</dt><dd>{formatSeconds(processElapsed, 1)}</dd></>}
-      </dl>
-      {output && <TerminalOutput output={output} />}
-      {!output && matchedLine && <TerminalOutput output={matchedLine} label="Matched" />}
-      {details && <DetailsViewer data={details} theme={theme} />}
+        <span className={`chevron${expanded ? " expanded" : ""}`} aria-hidden="true">⌄</span>
+      </button>
+      {expanded && (
+        <>
+          <dl className="process-meta">
+            {handle && <><dt>handle</dt><dd>{handle}</dd></>}
+            {state && <><dt>state</dt><dd>{state}</dd></>}
+            {processElapsed > 0 && <><dt>elapsed</dt><dd>{formatSeconds(processElapsed, 1)}</dd></>}
+          </dl>
+          {output && <TerminalOutput output={output} />}
+          {!output && matchedLine && <TerminalOutput output={matchedLine} label="Matched" />}
+          {details && <DetailsViewer data={details} theme={theme} />}
+        </>
+      )}
     </section>
   );
 }
 
 function GenericTool({ toolName, result, theme }: { toolName: string; result?: ToolResult; theme: "light" | "dark" }) {
+  const [expanded, setExpanded] = useState(false);
   const text = textContent(result);
   const details = useMemo(() => {
     if (!result?.structuredContent) return undefined;
@@ -195,11 +228,27 @@ function GenericTool({ toolName, result, theme }: { toolName: string; result?: T
     return Object.keys(rest).length > 0 ? rest : undefined;
   }, [result]);
 
+  useEffect(() => {
+    setExpanded(false);
+  }, [result]);
+
   return (
     <section className="tool-card">
-      <header className="tool-header"><div className="tool-title">{friendlyName(toolName)}</div></header>
-      {text && <pre className="text-result">{text}</pre>}
-      {details && <DetailsViewer data={details} theme={theme} initiallyOpen={!text} />}
+      <button
+        className="tool-header tool-toggle"
+        type="button"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((current) => !current)}
+      >
+        <div className="tool-title">{friendlyName(toolName)}</div>
+        <span className={`chevron${expanded ? " expanded" : ""}`} aria-hidden="true">⌄</span>
+      </button>
+      {expanded && (
+        <>
+          {text && <pre className="text-result">{text}</pre>}
+          {details && <DetailsViewer data={details} theme={theme} initiallyOpen={!text} />}
+        </>
+      )}
     </section>
   );
 }

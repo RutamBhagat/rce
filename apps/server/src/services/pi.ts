@@ -118,8 +118,12 @@ export class PiService {
     }
 
     for (const definition of definitions.values()) {
+      const description = [
+        "Manual-only extension tool. Invoke only when the user explicitly asks to use this tool, its backing extension/service, or the capability it provides; do not call it proactively based only on relevance.",
+        definition.description,
+      ].filter(Boolean).join(" ");
       registerRceTool(server, definition.name, {
-        description: definition.description,
+        description,
         inputSchema: fromJsonSchema(definition.parameters as JsonSchemaType),
       }, async (args, ctx) => {
         try {

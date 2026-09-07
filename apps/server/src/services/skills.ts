@@ -26,23 +26,13 @@ export class SkillService {
   }
 
   get toolDescription(): string {
-    const visible = this.#skills.filter((skill) => !skill.disableModelInvocation);
-    if (visible.length === 0) {
-      return "Load the full instructions for an installed Agent Skill. No model-invokable skills were discovered when RCE started.";
-    }
-
-    return [
-      "Load the full instructions for an installed Agent Skill when the task matches its description. Skills are discovered by Pi when RCE starts and loaded only on demand.",
-      "Available skills:",
-      ...visible.map((skill) => `- ${skill.name}: ${skill.description}`),
-    ].join("\n");
+    return "Load the full instructions for a named installed Agent Skill. Manual-only: invoke this tool only when the user explicitly asks to load or use that skill; do not select skills automatically based on relevance. Use list_skills first only if the user explicitly asks to discover available skills.";
   }
 
   list(): string {
-    const visible = this.#skills.filter((skill) => !skill.disableModelInvocation);
-    if (visible.length === 0) return "No model-invokable Agent Skills were discovered when RCE started.";
+    if (this.#skills.length === 0) return "No Agent Skills were discovered when RCE started.";
 
-    return visible.map((skill) => `- ${skill.name}: ${skill.description}`).join("\n");
+    return this.#skills.map((skill) => `- ${skill.name}: ${skill.description}`).join("\n");
   }
 
   async load(name: string): Promise<string> {

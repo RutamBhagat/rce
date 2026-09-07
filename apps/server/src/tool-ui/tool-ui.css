@@ -33,7 +33,7 @@ body { font-size: var(--font-text-sm-size, 14px); line-height: var(--font-text-s
   padding: 12px 14px;
 }
 
-.diff-toggle {
+.tool-toggle {
   width: 100%;
   border: 0;
   background: transparent;
@@ -43,9 +43,9 @@ body { font-size: var(--font-text-sm-size, 14px); line-height: var(--font-text-s
   cursor: pointer;
 }
 
-.diff-toggle:hover { background: var(--color-background-secondary, rgba(0, 0, 0, 0.025)); }
+.tool-toggle:hover { background: var(--color-background-secondary, rgba(0, 0, 0, 0.025)); }
 
-.diff-toggle:focus-visible {
+.tool-toggle:focus-visible {
   outline: 2px solid var(--color-border-focus, currentColor);
   outline-offset: -2px;
 }

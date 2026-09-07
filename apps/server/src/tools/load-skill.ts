@@ -9,7 +9,7 @@ const schema = {
     name: {
       type: "string",
       minLength: 1,
-      description: "Exact skill name from the available-skills catalog in this tool description.",
+      description: "Exact installed skill name explicitly requested by the user.",
     },
   },
   required: ["name"],

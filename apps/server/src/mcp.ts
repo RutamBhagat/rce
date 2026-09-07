@@ -17,9 +17,9 @@ export async function createMcp(root: string, origin: string) {
 
   return createMcpHandler(() => {
     const server = new McpServer({ name: "rce", version: VERSION }, {
-      instructions: "Prefer the direct Pi-backed tools for regular filesystem and shell work, and prefer process_* for persistent or interactive commands through Herdr. Use read_many for efficient batched/ranged reads and apply_patch for structured multi-file edits. MCP tools discovered from the local Codex CLI are exposed directly through Pi; call those tools normally when a task requires them. Do not use the MCP gateway tool when an equivalent direct tool is available.",
+      instructions: "Use the core RCE filesystem, shell, patch, and process tools as needed for the user's task. Agent Skills are manual-only: call list_skills only when the user explicitly asks to list/discover skills, and call load_skill only when the user explicitly asks to load/use a named skill. Extension-backed tools discovered from the local Codex MCP configuration (including web search, Context7, browser/CUA, and other external MCP tools) are also manual-only: invoke them only when the user explicitly asks to use that tool, extension, service, or capability. Do not invoke skills or extension-backed tools proactively based only on relevance. Prefer process_* for persistent or interactive commands through Herdr, read_many for efficient batched/ranged reads, and apply_patch for structured multi-file edits. Do not use the MCP gateway tool when an equivalent direct tool is available.",
     });
-    registerToolResultApp(server);
+    registerToolResultApp(server, origin);
     registerTools(server, context);
     return server;
   }, { legacy: "reject" });
