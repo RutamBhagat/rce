@@ -8,6 +8,7 @@ export type ToolContext = {
   pi: PiService;
   skills: SkillService;
   processes?: ProcessManager;
+  setRoot(root: string): Promise<string>;
 };
 
 export type ToolPlugin = {

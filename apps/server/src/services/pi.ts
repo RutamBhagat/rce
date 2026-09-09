@@ -29,9 +29,9 @@ export type PiToolName = "ls" | "find" | "grep" | "write" | "bash";
 export type PiResult = { content: unknown[] };
 
 export class PiService {
-  readonly #root: string;
-  readonly #read: CodingTool;
-  readonly #tools: Record<PiToolName, CodingTool>;
+  #root: string;
+  #read: CodingTool;
+  #tools: Record<PiToolName, CodingTool>;
   readonly #resources: DefaultResourceLoader;
   readonly #elicitation: McpElicitationBridge;
   readonly #mcpServerNames: string[];
@@ -94,6 +94,18 @@ export class PiService {
 
   parameters(name: PiToolName): JsonSchemaType {
     return this.#tools[name].parameters as JsonSchemaType;
+  }
+
+  setRoot(root: string): void {
+    this.#root = root;
+    this.#read = createReadTool(root);
+    this.#tools = {
+      ls: createLsTool(root),
+      find: createFindTool(root),
+      grep: createGrepTool(root),
+      write: createWriteTool(root),
+      bash: createBashTool(root),
+    };
   }
 
   async read(args: ReadToolInput, signal?: AbortSignal): Promise<PiResult> {

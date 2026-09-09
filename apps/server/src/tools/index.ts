@@ -13,6 +13,7 @@ import { processStartTool } from "./process-start.ts";
 import { processStopTool } from "./process-stop.ts";
 import { processWaitTool } from "./process-wait.ts";
 import { readManyTool } from "./read-many.ts";
+import { setRootTool } from "./set-root.ts";
 import type { ToolContext, ToolPlugin } from "./types.ts";
 import { writeTool } from "./write.ts";
 
@@ -20,6 +21,7 @@ const tools: ToolPlugin[] = [
   listSkillsTool,
   loadSkillTool,
   readManyTool,
+  setRootTool,
   lsTool,
   findTool,
   grepTool,

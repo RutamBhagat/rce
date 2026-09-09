@@ -234,9 +234,7 @@ If your ChatGPT client exposes plugin permissions, you can allow RCE actions the
 
 ## Workspace and authorization model
 
-RCE resolves the current working directory once at startup and uses its canonical path as the workspace root.
-
-Start one RCE process per project. Restart RCE from another directory when you want to expose another project.
+RCE resolves the current working directory at startup and uses its canonical path as the initial workspace root. The model can change the active workspace at runtime with the `set_root` tool; relative paths passed to that tool resolve from the current root.
 
 Each RCE launch also creates fresh in-memory OAuth state and a new approval code. RCE stores no authorization state on disk.
 
