@@ -23,9 +23,9 @@ export const processReadTool: ToolPlugin = {
     registerRceTool(server, "process_read", {
       description: "Read terminal output from a persistent process. Defaults to the last 80 recent unwrapped rows; use visible for interactive TUIs or detection for the agent snapshot.",
       inputSchema: fromJsonSchema<Args>(schema as JsonSchemaType),
-    }, async ({ handle, lines, source }) => {
+    }, async ({ handle, lines, source }, ctx) => {
       try {
-        const output = await context.processes!.read(handle, { lines, source });
+        const output = await context.processes!.read(handle, { lines, source }, ctx.mcpReq.signal);
         return { content: [{ type: "text" as const, text: output }] };
       } catch (error) {
         return toolError(error);

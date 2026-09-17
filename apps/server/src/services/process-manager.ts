@@ -59,21 +59,21 @@ export class ProcessManager {
     this.#label = `rce-${createHash("sha256").update(JSON.stringify([root, origin])).digest("hex")}`;
   }
 
-  async start(command: string): Promise<string> {
+  async start(command: string, signal?: AbortSignal): Promise<string> {
     return this.#queue(async () => {
-      const workspace = await this.#findWorkspace();
+      const workspace = await this.#findWorkspace(signal);
       let control: Pane;
       if (workspace) {
-        const panes = await this.#listPanes(workspace.workspace_id);
+        const panes = await this.#listPanes(workspace.workspace_id, signal);
         const controls = panes.filter((pane) => pane.label === this.#controlLabel);
         if (controls.length !== 1) throw new Error("The RCE workspace must have exactly one control pane.");
         control = controls[0]!;
       } else {
         const created = await herdr<{ workspace: Workspace; root_pane: Pane }>([
           "workspace", "create", "--cwd", this.#root, "--label", this.#label, "--no-focus",
-        ]);
+        ], signal);
         try {
-          await herdr(["pane", "rename", created.root_pane.pane_id, this.#controlLabel]);
+          await herdr(["pane", "rename", created.root_pane.pane_id, this.#controlLabel], signal);
         } catch (error) {
           await herdr(["workspace", "close", created.workspace.workspace_id]);
           throw error;
@@ -83,9 +83,9 @@ export class ProcessManager {
 
       const { pane } = await herdr<{ pane: Pane }>([
         "pane", "split", control.pane_id, "--direction", "down", "--cwd", this.#root, "--no-focus",
-      ]);
+      ], signal);
       try {
-        await herdr(["pane", "run", pane.pane_id, command]);
+        await herdr(["pane", "run", pane.pane_id, command], signal);
       } catch (error) {
         await herdr(["pane", "close", pane.pane_id]);
         throw error;
@@ -97,20 +97,20 @@ export class ProcessManager {
     });
   }
 
-  async read(handle: string, options: { lines?: number; source?: ProcessReadSource } = {}): Promise<string> {
+  async read(handle: string, options: { lines?: number; source?: ProcessReadSource } = {}, signal?: AbortSignal): Promise<string> {
     return this.#queue(async () => {
-      await this.#requireProcessPane(handle);
+      await this.#requireProcessPane(handle, signal);
       return herdr<string>([
         "pane", "read", handle, "--source", options.source ?? "recent-unwrapped",
         ...(options.lines === undefined ? [] : ["--lines", String(options.lines)]),
-      ]);
+      ], signal);
     });
   }
 
-  async info(handle: string): Promise<ProcessInfoResult & { idle: boolean; command?: string; elapsedMs?: number }> {
+  async info(handle: string, signal?: AbortSignal): Promise<ProcessInfoResult & { idle: boolean; command?: string; elapsedMs?: number }> {
     return this.#queue(async () => {
-      await this.#requireProcessPane(handle);
-      const result = await herdr<ProcessInfoResult>(["pane", "process-info", "--pane", handle]);
+      await this.#requireProcessPane(handle, signal);
+      const result = await herdr<ProcessInfoResult>(["pane", "process-info", "--pane", handle], signal);
       const info = result.process_info;
       const idle = info.foreground_process_group_id === info.shell_pid
         && info.foreground_processes.every((process) => process.pid === info.shell_pid);
@@ -127,7 +127,7 @@ export class ProcessManager {
 
   async wait(handle: string, options: ProcessWaitOptions, signal?: AbortSignal): Promise<WaitOutputResult> {
     return this.#afterPending(async () => {
-      await this.#requireProcessPane(handle);
+      await this.#requireProcessPane(handle, signal);
       const result = await herdr<WaitOutputResult>([
         "pane", "wait-output", handle, "--source", "recent-unwrapped",
         ...(options.match === undefined ? ["--regex", options.regex!] : ["--match", options.match]),
@@ -142,27 +142,27 @@ export class ProcessManager {
     });
   }
 
-  async send(handle: string, input: ProcessSendInput): Promise<void> {
+  async send(handle: string, input: ProcessSendInput, signal?: AbortSignal): Promise<void> {
     return this.#queue(async () => {
-      await this.#requireProcessPane(handle);
+      await this.#requireProcessPane(handle, signal);
       if ("text" in input) {
-        await herdr(["pane", "send-text", handle, input.text]);
+        await herdr(["pane", "send-text", handle, input.text], signal);
       } else {
-        await herdr(["pane", "send-keys", handle, ...input.keys]);
+        await herdr(["pane", "send-keys", handle, ...input.keys], signal);
       }
     });
   }
 
-  async stop(handle: string): Promise<void> {
+  async stop(handle: string, signal?: AbortSignal): Promise<void> {
     return this.#queue(async () => {
-      const { workspace } = await this.#requireProcessPane(handle);
-      await herdr(["pane", "close", handle]);
+      const { workspace } = await this.#requireProcessPane(handle, signal);
+      await herdr(["pane", "close", handle], signal);
       this.#launchFingerprints.delete(handle);
       this.#commands.delete(handle);
       this.#startedAt.delete(handle);
-      const remaining = await this.#listPanes(workspace.workspace_id);
+      const remaining = await this.#listPanes(workspace.workspace_id, signal);
       if (remaining.every((pane) => pane.label === this.#controlLabel)) {
-        await herdr(["workspace", "close", workspace.workspace_id]);
+        await herdr(["workspace", "close", workspace.workspace_id], signal);
       }
     });
   }
@@ -177,27 +177,27 @@ export class ProcessManager {
     return this.#pending.then(operation);
   }
 
-  async #findWorkspace(): Promise<Workspace | undefined> {
-    const { workspaces } = await herdr<{ workspaces: Workspace[] }>(["workspace", "list"]);
+  async #findWorkspace(signal?: AbortSignal): Promise<Workspace | undefined> {
+    const { workspaces } = await herdr<{ workspaces: Workspace[] }>(["workspace", "list"], signal);
     const matches = workspaces.filter((workspace) => workspace.label === this.#label);
     if (matches.length > 1) throw new Error("Multiple RCE workspaces have the same label.");
     return matches[0];
   }
 
-  async #listPanes(workspaceId: string): Promise<Pane[]> {
-    const { panes } = await herdr<{ panes: Pane[] }>(["pane", "list", "--workspace", workspaceId]);
+  async #listPanes(workspaceId: string, signal?: AbortSignal): Promise<Pane[]> {
+    const { panes } = await herdr<{ panes: Pane[] }>(["pane", "list", "--workspace", workspaceId], signal);
     return panes;
   }
 
-  async #requireProcessPane(handle: string): Promise<{ workspace: Workspace; pane: Pane }> {
-    const workspace = await this.#findWorkspace();
+  async #requireProcessPane(handle: string, signal?: AbortSignal): Promise<{ workspace: Workspace; pane: Pane }> {
+    const workspace = await this.#findWorkspace(signal);
     if (!workspace) {
       this.#launchFingerprints.delete(handle);
       this.#commands.delete(handle);
       this.#startedAt.delete(handle);
       throw new Error("Unknown, closed, or foreign process handle.");
     }
-    const panes = await this.#listPanes(workspace.workspace_id);
+    const panes = await this.#listPanes(workspace.workspace_id, signal);
     const pane = panes.find((candidate) => candidate.pane_id === handle && candidate.workspace_id === workspace.workspace_id);
     if (!pane) {
       this.#launchFingerprints.delete(handle);

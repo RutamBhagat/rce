@@ -12,7 +12,7 @@ const schema = {
 export const listSkillsTool: ToolPlugin = {
   register(server, context) {
     registerRceTool(server, "list_skills", {
-      description: "List installed Agent Skills. Use only when the user asks to discover skills.",
+      description: "List installed Agent Skills, task descriptions, invocation mode, and bundled helper files. Use this when a skill might apply but you do not know its exact name.",
       inputSchema: fromJsonSchema<Record<string, never>>(schema as JsonSchemaType),
     }, async () => textResult(context.skills.list()));
   },

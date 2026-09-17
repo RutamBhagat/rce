@@ -16,9 +16,9 @@ export const processStopTool: ToolPlugin = {
     registerRceTool(server, "process_stop", {
       description: "Stop a persistent process and close its pane.",
       inputSchema: fromJsonSchema<{ handle: string }>(schema as JsonSchemaType),
-    }, async ({ handle }) => {
+    }, async ({ handle }, ctx) => {
       try {
-        await context.processes!.stop(handle);
+        await context.processes!.stop(handle, ctx.mcpReq.signal);
         return { content: [{ type: "text" as const, text: `Stopped process ${handle}.` }] };
       } catch (error) {
         return toolError(error);
