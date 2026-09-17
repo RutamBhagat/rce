@@ -1,6 +1,6 @@
 import { fromJsonSchema, type JsonSchemaType } from "@modelcontextprotocol/server";
 import type { ProcessReadSource } from "../services/process-manager.ts";
-import { registerRceTool } from "./app-tool.ts";
+import { registerRceTool } from "./register-tool.ts";
 import type { ToolPlugin } from "./types.ts";
 import { toolError } from "./utils.ts";
 

@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { promisify } from "node:util";
 import type { ToolPlugin } from "./types.ts";
-import { registerRceTool } from "./app-tool.ts";
+import { registerRceTool } from "./register-tool.ts";
 import { buildDiffPayload, extractPatchMutations, snapshotMutations } from "./file-diff.ts";
 import { toolError } from "./utils.ts";
 

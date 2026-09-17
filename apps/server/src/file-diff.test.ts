@@ -1,4 +1,4 @@
-import { parsePatchFiles } from "@pierre/diffs";
+import { parsePatch } from "diff";
 import assert from "node:assert/strict";
 import { mkdtemp, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -61,7 +61,7 @@ test("buildDiffPayload captures multi-file create/delete/rename/modify diffs", a
     ]);
     assert.equal(diff.files[3]?.additions, 0);
     assert.equal(diff.files[3]?.deletions, 0);
-    assert.equal(parsePatchFiles(diff.patch).flatMap((patch) => patch.files).length, 4);
+    assert.equal(parsePatch(diff.patch).length, 4);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

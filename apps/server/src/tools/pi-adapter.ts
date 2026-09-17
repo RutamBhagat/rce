@@ -1,7 +1,7 @@
 import { fromJsonSchema } from "@modelcontextprotocol/server";
 import type { PiToolName } from "../services/pi.ts";
 import type { ToolPlugin } from "./types.ts";
-import { registerRceTool } from "./app-tool.ts";
+import { registerRceTool } from "./register-tool.ts";
 
 export function piTool(name: PiToolName): ToolPlugin {
   return {

@@ -1,6 +1,6 @@
 import type { WriteToolInput } from "@earendil-works/pi-coding-agent";
 import { fromJsonSchema } from "@modelcontextprotocol/server";
-import { registerRceTool } from "./app-tool.ts";
+import { registerRceTool } from "./register-tool.ts";
 import { buildDiffPayload, snapshotMutations, type FileMutation } from "./file-diff.ts";
 import type { ToolPlugin } from "./types.ts";
 

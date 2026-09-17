@@ -5,7 +5,7 @@ import { access, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { registerRceTool } from "./app-tool.ts";
+import { registerRceTool } from "./register-tool.ts";
 import type { ToolPlugin } from "./types.ts";
 
 const DEFAULT_MAX_LINES = 2_000;

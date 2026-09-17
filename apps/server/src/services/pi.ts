@@ -16,7 +16,7 @@ import { fromJsonSchema, isInputRequiredResult, type JsonSchemaType, type McpSer
 import { createMcpAdapter, MCP_STATUS_EVENT, type McpStatusSnapshot } from "pi-mcp-adapter";
 import { loadCodexMcpConfig } from "./codex-mcp.ts";
 import { McpElicitationBridge } from "./elicitation-bridge.ts";
-import { registerRceTool } from "../tools/app-tool.ts";
+import { registerRceTool } from "../tools/register-tool.ts";
 
 type CodingTool = {
   name: string;
