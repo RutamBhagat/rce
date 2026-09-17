@@ -14,16 +14,12 @@ export const processInfoTool: ToolPlugin = {
   available: (context) => context.processes !== undefined,
   register(server, context) {
     registerRceTool(server, "process_info", {
-      description: "Class 2 Herdr tool. Read a structured Herdr process-state snapshot for a process pane, including shell PID, foreground process group, foreground processes, and a derived idle flag. idle means the pane shell is foreground at this instant; it is not a completion event.",
+      description: "Read process state, including PIDs, foreground processes, elapsed time, and whether the shell is currently idle.",
       inputSchema: fromJsonSchema<{ handle: string }>(schema as JsonSchemaType),
     }, async ({ handle }) => {
       try {
         const info = await context.processes!.info(handle);
-        const state = info.idle ? "idle" : "running";
-        return {
-          content: [{ type: "text" as const, text: `Process ${handle}: ${state}.` }],
-          structuredContent: { process: { kind: "info", handle, state, elapsedMs: info.elapsedMs, idle: info.idle, details: info } },
-        };
+        return { content: [{ type: "text" as const, text: JSON.stringify(info, null, 2) }] };
       } catch (error) {
         return toolError(error);
       }

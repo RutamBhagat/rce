@@ -2,18 +2,9 @@
 
 RCE exposes the current project to ChatGPT through an OAuth-protected MCP server.
 
-RCE exposes fast local coding tools backed by Pi, persistent process controls through Herdr, and MCP tools discovered from the local Codex CLI through `pi-mcp-adapter`.
-
-For regular filesystem, search, shell, and process work, models should prefer the Pi-backed and Herdr tools. MCP-backed plugin tools are projected into the same native tool surface, so there is no Codex app-server RPC hop during tool calls.
-
-RCE also provides direct batched reads and Codex-format patching shortcuts.
-
-> [!IMPORTANT]
-> RCE does not start Codex model inference or a Codex app-server. Codex is used only to resolve the effective MCP inventory at startup.
+RCE exposes fast local coding tools backed by Pi, persistent process controls through Herdr, direct batched reads, and Codex-format patching shortcuts.
 
 ## What RCE exposes
-
-Pi and Herdr are the primary path for ordinary coding work. MCP-backed plugins are exposed as native Pi extension tools.
 
 | Area | RCE tools | Purpose |
 | --- | --- | --- |
@@ -21,15 +12,6 @@ Pi and Herdr are the primary path for ordinary coding work. MCP-backed plugins a
 | Pi skills | `list_skills`, `load_skill` | Discover and load local Agent Skills without routing through Codex. |
 | Direct files | `read_many`, `apply_patch` | Read files in batches and apply structured Codex-format patches. |
 | Persistent processes | `process_start`, `process_read`, `process_wait`, `process_send`, `process_info`, `process_stop` | Run and control persistent or interactive commands through Herdr. |
-| MCP plugins | dynamically discovered direct tools | MCP servers from the effective Codex CLI configuration, connected through `pi-mcp-adapter`. |
-
-At startup, RCE runs `codex mcp list --json` once and converts the effective transports into an in-memory `pi-mcp-adapter` configuration. The inventory output is never logged because it can contain resolved environment values or HTTP headers.
-
-`pi-mcp-adapter` connects enabled servers to discover tool metadata and caches it. MCP tools are then registered directly, so calls do not pass through a generic JSON-RPC gateway or require the model to translate method names and schemas.
-
-When a downstream MCP tool needs user input or approval, RCE forwards that request through MCP's multi-round-trip `input_required` flow. The original downstream call stays suspended and resumes with the client's `inputResponses`, so approval does not replay the tool operation.
-
-Connector-only Codex app bindings and Codex-specific thread/runtime APIs are intentionally outside this surface. RCE only projects MCP-backed capabilities here.
 
 ## Requirements
 
@@ -82,7 +64,7 @@ RCE detects the `herdr` CLI at startup. When Herdr is available, RCE registers t
 
 These tools use dedicated Herdr panes for long-running or interactive commands. They can read terminal output, send input, and wait for output. They can also inspect foreground process state and close the process pane.
 
-Without Herdr, the Pi-backed tools, MCP plugin tools, `read_many`, and `apply_patch` still work.
+Without Herdr, the Pi-backed tools, `read_many`, and `apply_patch` still work.
 
 ## Create a stable HTTPS endpoint
 
@@ -230,7 +212,7 @@ ChatGPT calls custom MCP integrations **apps**.
 
 Open a new chat and select RCE from the tools menu. You can also mention RCE when a message needs project access.
 
-If your ChatGPT client exposes plugin permissions, you can allow RCE actions there. Grant only the access level you want RCE to have.
+If your ChatGPT client exposes tool permissions, you can allow RCE actions there. Grant only the access level you want RCE to have.
 
 ## Workspace and authorization model
 

@@ -14,16 +14,12 @@ export const processStartTool: ToolPlugin = {
   available: (context) => context.processes !== undefined,
   register(server, context) {
     registerRceTool(server, "process_start", {
-      description: "Class 2 Herdr tool. Start a persistent or interactive shell command in the project using Herdr and return its pane handle. Use process_* only when state, interaction, or long-running output must persist across calls; do not use Herdr as a fallback for ordinary Class 1 one-shot commands.",
+      description: "Start a persistent or interactive command and return its process handle.",
       inputSchema: fromJsonSchema<{ command: string }>(schema as JsonSchemaType),
     }, async ({ command }) => {
       try {
         const handle = await context.processes!.start(command);
-        const info = await context.processes!.info(handle);
-        return {
-          content: [{ type: "text" as const, text: handle }],
-          structuredContent: { process: { kind: "start", command, handle, state: info.idle ? "idle" : "running", elapsedMs: info.elapsedMs, details: info } },
-        };
+        return { content: [{ type: "text" as const, text: handle }] };
       } catch (error) {
         return toolError(error);
       }

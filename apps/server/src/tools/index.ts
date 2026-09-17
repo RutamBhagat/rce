@@ -41,5 +41,4 @@ export function registerTools(server: McpServer, context: ToolContext): void {
     if (tool.available?.(context) === false) continue;
     tool.register(server, context);
   }
-  context.pi.registerExtensions(server);
 }

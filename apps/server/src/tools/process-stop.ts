@@ -14,15 +14,12 @@ export const processStopTool: ToolPlugin = {
   available: (context) => context.processes !== undefined,
   register(server, context) {
     registerRceTool(server, "process_stop", {
-      description: "Class 2 Herdr tool. Stop a process by closing its pane. Close its RCE workspace when no child panes remain.",
+      description: "Stop a persistent process and close its pane.",
       inputSchema: fromJsonSchema<{ handle: string }>(schema as JsonSchemaType),
     }, async ({ handle }) => {
       try {
         await context.processes!.stop(handle);
-        return {
-          content: [{ type: "text" as const, text: `Stopped process ${handle}.` }],
-          structuredContent: { process: { kind: "stop", handle, state: "stopped" } },
-        };
+        return { content: [{ type: "text" as const, text: `Stopped process ${handle}.` }] };
       } catch (error) {
         return toolError(error);
       }

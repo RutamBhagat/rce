@@ -1,3 +1,3 @@
-import { piTool } from "./pi-adapter.ts";
+import { piTool } from "./pi-tool.ts";
 
 export const lsTool = piTool("ls");

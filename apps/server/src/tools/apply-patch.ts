@@ -6,7 +6,6 @@ import path from "node:path";
 import { promisify } from "node:util";
 import type { ToolPlugin } from "./types.ts";
 import { registerRceTool } from "./register-tool.ts";
-import { buildDiffPayload, extractPatchMutations, snapshotMutations } from "./file-diff.ts";
 import { toolError } from "./utils.ts";
 
 const exec = promisify(execFile);
@@ -105,22 +104,13 @@ export async function applyCodexPatch(
 export const applyPatchTool: ToolPlugin = {
   register(server, context) {
     registerRceTool(server, "apply_patch", {
-      description: "Class 1 core tool. Apply one Codex-compatible patch across one or more text files. Pass the complete *** Begin Patch ... *** End Patch payload in patch. Paths must be relative to the RCE root. Supports *** Add File, *** Update File with @@ context hunks, optional *** Move to, and *** Delete File. Use this for incremental source edits; use write for intentional full-file replacement. If patching fails or the result is unavailable, retry through the Class 1 bash tool.",
+      description: "Apply a complete Codex-format *** Begin Patch ... *** End Patch payload. Paths must be relative to the project root. Supports add, update, move, and delete operations.",
       inputSchema: fromJsonSchema<{ patch: string }>(schema as JsonSchemaType),
     }, async ({ patch }, ctx) => {
       try {
-        const mutations = extractPatchMutations(patch);
-        const before = await snapshotMutations(context.root, mutations);
         const { stdout, stderr } = await applyCodexPatch(context.root, patch, ctx.mcpReq.signal);
-        const after = await snapshotMutations(context.root, mutations);
         const text = [stdout.trim(), stderr.trim()].filter(Boolean).join("\n");
-        return {
-          content: [{ type: "text" as const, text: text || "Patch applied." }],
-          structuredContent: {
-            output: text || "Patch applied.",
-            diff: buildDiffPayload(context.root, mutations, before, after),
-          },
-        };
+        return { content: [{ type: "text" as const, text: text || "Patch applied." }] };
       } catch (error) {
         const stderr = error && typeof error === "object" && "stderr" in error && typeof error.stderr === "string"
           ? error.stderr.trim()

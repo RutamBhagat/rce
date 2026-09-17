@@ -18,12 +18,11 @@ const schema = {
 export const setRootTool: ToolPlugin = {
   register(server, context) {
     registerRceTool(server, "set_root", {
-      description: "Class 1 core tool. Change the active RCE project root for subsequent filesystem, search, shell, patch, skill, and process operations. Relative paths resolve from the current root. Use this when the task needs to move to another project or directory.",
+      description: "Change the project root for subsequent tool calls. Relative paths resolve from the current root.",
       inputSchema: fromJsonSchema<{ path: string }>(schema as JsonSchemaType),
     }, async ({ path }) => {
       const root = await context.setRoot(path);
-      const content = [{ type: "text" as const, text: root }];
-      return { content, structuredContent: { output: content, root } };
+      return { content: [{ type: "text" as const, text: root }] };
     });
   },
 };
