@@ -25,6 +25,9 @@ export async function startServer(config: RceConfig): Promise<void> {
   const protectedMcp = requireMcpAuth(auth, (request) => mcp.fetch(request), {
     resource: resource.href,
     requiredScopes: [SCOPE],
+    // Keep JWKS discovery on loopback instead of sending cold-cache verification
+    // through the public tunnel and back into this process.
+    jwksUrl: `http://127.0.0.1:${config.port}/jwks`,
   });
   const started = new WeakMap<Request, number>();
 

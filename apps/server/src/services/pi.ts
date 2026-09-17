@@ -45,11 +45,6 @@ export class PiService {
     return this.#tools[name].parameters as JsonSchemaType;
   }
 
-  setRoot(root: string): void {
-    this.#read = createReadTool(root);
-    this.#tools = createTools(root);
-  }
-
   async read(args: ReadToolInput, signal?: AbortSignal): Promise<PiResult> {
     return this.#read.execute(crypto.randomUUID(), args, signal);
   }

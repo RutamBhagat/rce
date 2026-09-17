@@ -19,10 +19,17 @@ export async function createMcp(root: string, origin: string) {
       const nextRoot = await realpath(candidate);
       if (!(await stat(nextRoot)).isDirectory()) throw new Error(`Not a directory: ${input}`);
 
-      context.pi.setRoot(nextRoot);
-      context.skills = await SkillService.create(nextRoot);
-      context.processes = ProcessManager.create(nextRoot, origin);
+      const nextPi = PiService.create(nextRoot);
+      const nextSkills = await SkillService.create(nextRoot);
+      const nextProcesses = ProcessManager.create(nextRoot, origin);
+
+      // Commit the root and root-bound services together. Tool calls can run
+      // concurrently, so exposing a partially updated context would let one
+      // call observe services rooted in different directories.
       context.root = nextRoot;
+      context.pi = nextPi;
+      context.skills = nextSkills;
+      context.processes = nextProcesses;
       return nextRoot;
     },
   };
