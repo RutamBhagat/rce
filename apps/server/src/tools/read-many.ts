@@ -49,6 +49,12 @@ export const readManyTool: ToolPlugin = {
     registerRceTool(server, "read_many", {
       description: `Read files or line ranges in parallel. Text uses 1-indexed offset/limit and truncates at ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB. Supports png, jpeg, gif, and webp images.`,
       inputSchema: fromJsonSchema<{ reads: ReadInput[] }>(schema as JsonSchemaType),
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     }, async ({ reads }: { reads: ReadInput[] }, ctx) => {
       const results = await Promise.all(reads.map(async (input) => {
         try {

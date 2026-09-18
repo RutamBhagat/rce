@@ -33,6 +33,12 @@ export const processWaitTool: ToolPlugin = {
     registerRceTool(server, "process_wait", {
       description: "Wait for a literal substring or Rust regex in process output. Existing output is eligible. Timeout is milliseconds; omit it to wait indefinitely. Specify exactly one of match or regex.",
       inputSchema: fromJsonSchema<Args>(schema as JsonSchemaType),
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     }, async ({ handle, lines, match, regex, timeout }, ctx) => {
       try {
         const result = await context.processes!.wait(handle, { lines, match, regex, timeout }, ctx.mcpReq.signal);

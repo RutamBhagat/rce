@@ -1,11 +1,18 @@
-import type { McpServer } from "@modelcontextprotocol/server";
+import type { McpServer, ToolAnnotations } from "@modelcontextprotocol/server";
+
+type RceToolAnnotations = ToolAnnotations & {
+  readOnlyHint: boolean;
+  destructiveHint: boolean;
+  idempotentHint: boolean;
+  openWorldHint: boolean;
+};
 
 type ToolConfig = {
   title?: string;
   description?: string;
   inputSchema?: unknown;
   outputSchema?: unknown;
-  annotations?: unknown;
+  annotations: RceToolAnnotations;
   _meta?: Record<string, unknown>;
 };
 

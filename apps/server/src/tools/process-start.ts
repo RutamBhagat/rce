@@ -16,6 +16,12 @@ export const processStartTool: ToolPlugin = {
     registerRceTool(server, "process_start", {
       description: "Start a persistent or interactive command and return its process handle.",
       inputSchema: fromJsonSchema<{ command: string }>(schema as JsonSchemaType),
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     }, async ({ command }, ctx) => {
       try {
         const handle = await context.processes!.start(command, ctx.mcpReq.signal);

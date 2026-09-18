@@ -20,6 +20,12 @@ export const setRootTool: ToolPlugin = {
     registerRceTool(server, "set_root", {
       description: "Change the project root for subsequent tool calls. Relative paths resolve from the current root.",
       inputSchema: fromJsonSchema<{ path: string }>(schema as JsonSchemaType),
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     }, async ({ path }) => {
       const root = await context.setRoot(path);
       return { content: [{ type: "text" as const, text: root }] };

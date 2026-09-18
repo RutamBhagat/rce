@@ -13,11 +13,18 @@ test("RCE tools register without client UI metadata", async () => {
     },
   } as unknown as McpServer;
 
-  registerRceTool(server, "demo", { description: "demo" }, async () => ({
+  const annotations = {
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  };
+  registerRceTool(server, "demo", { description: "demo", annotations }, async () => ({
     content: [{ type: "text", text: "ok" }],
   }));
 
   assert.equal(registeredConfig._meta, undefined);
+  assert.deepEqual(registeredConfig.annotations, annotations);
 
   assert.ok(registeredHandler);
   const result = await registeredHandler({}, { mcpReq: { signal: undefined } });

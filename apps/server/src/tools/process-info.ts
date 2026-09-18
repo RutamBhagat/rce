@@ -16,6 +16,12 @@ export const processInfoTool: ToolPlugin = {
     registerRceTool(server, "process_info", {
       description: "Read process state, including PIDs, foreground processes, elapsed time, and whether the shell is currently idle.",
       inputSchema: fromJsonSchema<{ handle: string }>(schema as JsonSchemaType),
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     }, async ({ handle }, ctx) => {
       try {
         const info = await context.processes!.info(handle, ctx.mcpReq.signal);

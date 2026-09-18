@@ -14,6 +14,12 @@ export const listSkillsTool: ToolPlugin = {
     registerRceTool(server, "list_skills", {
       description: "List installed Agent Skills, task descriptions, invocation mode, and bundled helper files. Use this when a skill might apply but you do not know its exact name.",
       inputSchema: fromJsonSchema<Record<string, never>>(schema as JsonSchemaType),
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     }, async () => textResult(context.skills.list()));
   },
 };

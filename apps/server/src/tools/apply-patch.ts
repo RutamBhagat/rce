@@ -106,6 +106,12 @@ export const applyPatchTool: ToolPlugin = {
     registerRceTool(server, "apply_patch", {
       description: "Apply a complete Codex-format *** Begin Patch ... *** End Patch payload. Paths must be relative to the project root. Supports add, update, move, and delete operations.",
       inputSchema: fromJsonSchema<{ patch: string }>(schema as JsonSchemaType),
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
     }, async ({ patch }, ctx) => {
       try {
         const { stdout, stderr } = await applyCodexPatch(context.root, patch, ctx.mcpReq.signal);

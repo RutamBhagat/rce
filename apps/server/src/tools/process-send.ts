@@ -34,6 +34,12 @@ export const processSendTool: ToolPlugin = {
     registerRceTool(server, "process_send", {
       description: "Send literal text without Enter, or terminal keys/chords such as Enter and ctrl+c, to a process. Specify exactly one of text or keys.",
       inputSchema: fromJsonSchema<Args>(schema as JsonSchemaType),
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     }, async ({ handle, text, keys }, ctx) => {
       try {
         await context.processes!.send(handle, text === undefined ? { keys: keys! } : { text }, ctx.mcpReq.signal);

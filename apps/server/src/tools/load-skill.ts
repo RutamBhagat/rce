@@ -21,6 +21,12 @@ export const loadSkillTool: ToolPlugin = {
     registerRceTool(server, "load_skill", {
       description: context.skills.toolDescription,
       inputSchema: fromJsonSchema<{ name: string }>(schema as JsonSchemaType),
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     }, async ({ name }) => {
       try {
         return textResult(await context.skills.load(name));
