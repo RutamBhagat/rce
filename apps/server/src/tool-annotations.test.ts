@@ -60,6 +60,10 @@ test("every RCE tool advertises its complete safety annotation profile", () => {
     process_send: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
     process_info: readOnly,
     process_stop: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
+    web_search: { ...readOnly, openWorldHint: true },
+    web_fetch: { ...readOnly, openWorldHint: true },
+    "resolve-library-id": { ...readOnly, openWorldHint: true },
+    "query-docs": { ...readOnly, openWorldHint: true },
   };
 
   assert.deepEqual(Object.fromEntries([...registered].map(([name, config]) => [name, config.annotations])), expected);

@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { applyPatchTool } from "./apply-patch.ts";
 import { bashTool } from "./bash.ts";
+import { context7Tools } from "./context7.ts";
 import { findTool } from "./find.ts";
 import { grepTool } from "./grep.ts";
 import { listSkillsTool } from "./list-skills.ts";
@@ -12,6 +13,7 @@ import { processSendTool } from "./process-send.ts";
 import { processStartTool } from "./process-start.ts";
 import { processStopTool } from "./process-stop.ts";
 import { processWaitTool } from "./process-wait.ts";
+import { parallelWebTools } from "./parallel-web.ts";
 import { readManyTool } from "./read-many.ts";
 import { setRootTool } from "./set-root.ts";
 import type { ToolContext, ToolPlugin } from "./types.ts";
@@ -34,6 +36,8 @@ const tools: ToolPlugin[] = [
   processSendTool,
   processInfoTool,
   processStopTool,
+  parallelWebTools,
+  context7Tools,
 ];
 
 export function registerTools(server: McpServer, context: ToolContext): void {
