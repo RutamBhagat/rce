@@ -4,6 +4,7 @@ import { bashTool } from "./bash.ts";
 import { context7Tools } from "./context7.ts";
 import { findTool } from "./find.ts";
 import { grepTool } from "./grep.ts";
+import { getProfileTool } from "./get-profile.ts";
 import { listSkillsTool } from "./list-skills.ts";
 import { loadSkillTool } from "./load-skill.ts";
 import { lsTool } from "./ls.ts";
@@ -20,6 +21,7 @@ import type { ToolContext, ToolPlugin } from "./types.ts";
 import { writeTool } from "./write.ts";
 
 const tools: ToolPlugin[] = [
+  getProfileTool,
   listSkillsTool,
   loadSkillTool,
   readManyTool,

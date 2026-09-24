@@ -44,6 +44,7 @@ test("every RCE tool advertises its complete safety annotation profile", () => {
   registerTools(server, context);
 
   const expected = {
+    get_profile: readOnly,
     list_skills: readOnly,
     load_skill: readOnly,
     read_many: readOnly,

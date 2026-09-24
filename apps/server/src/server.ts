@@ -5,6 +5,7 @@ import { Elysia, t } from "elysia";
 import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createAuth, SCOPE } from "./auth.ts";
+import { loadOrCreateAuthIdentity } from "./auth-store.ts";
 import type { RceConfig } from "./config.ts";
 import { consentHeaders, consentPage } from "./consent.ts";
 import { log } from "./logger.ts";
@@ -18,8 +19,9 @@ const consentCssUrl = import.meta.url.endsWith(".ts")
 const consentCss = readFileSync(consentCssUrl, "utf8");
 
 export async function startServer(config: RceConfig): Promise<void> {
-  const { auth, issuer, resource } = createAuth(config.origin);
-  const mcp = await createMcp(ROOT, config.origin);
+  const identity = await loadOrCreateAuthIdentity();
+  const { auth, issuer, resource } = await createAuth(config.origin, identity);
+  const mcp = await createMcp(ROOT, config.origin, identity.profileId);
   const approvalCode = randomBytes(32).toString("hex").slice(0, 12).toUpperCase().match(/.{4}/g)!.join("-");
   const allowedHostnames = [issuer.hostname, "localhost", "127.0.0.1", "[::1]"];
   const protectedMcp = requireMcpAuth(auth, (request) => mcp.fetch(request), {
