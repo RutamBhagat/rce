@@ -218,7 +218,7 @@ If your ChatGPT client exposes tool permissions, you can allow RCE actions there
 
 RCE resolves the current working directory at startup and uses its canonical path as the initial workspace root. The model can change the active workspace at runtime with the `set_root` tool; relative paths passed to that tool resolve from the current root.
 
-RCE stores its OAuth database and a stable profile UUID and signing secret in the OS-native user config directory, alongside `config.json`. Access and refresh tokens survive process restarts; refresh tokens expire after 30 days. Keep this directory private; removing the auth files requires connecting again. Each launch still creates a new approval code for new connections.
+RCE stores its OAuth database and signing secret in the OS-native user config directory, alongside `config.json`. Access and refresh tokens survive process restarts; refresh tokens expire after 30 days. The database and secret are restricted to the current OS user. Keep this directory private; removing the auth files requires connecting again. Each launch still creates a new approval code for new connections.
 
 A stable public hostname keeps the ChatGPT app endpoint unchanged between RCE sessions.
 

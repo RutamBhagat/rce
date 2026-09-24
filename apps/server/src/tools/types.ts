@@ -5,7 +5,6 @@ import type { SkillService } from "../services/skills.ts";
 
 export type ToolContext = {
   root: string;
-  profileId: string;
   pi: PiService;
   skills: SkillService;
   processes?: ProcessManager;

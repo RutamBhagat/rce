@@ -8,10 +8,9 @@ import { registerTools } from "./tools/index.ts";
 import type { ToolContext } from "./tools/types.ts";
 import { VERSION } from "./version.ts";
 
-export async function createMcp(root: string, origin: string, profileId: string) {
+export async function createMcp(root: string, origin: string) {
   const context: ToolContext = {
     root,
-    profileId,
     pi: PiService.create(root),
     skills: await SkillService.create(root),
     processes: ProcessManager.create(root, origin),

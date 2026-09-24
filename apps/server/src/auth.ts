@@ -6,6 +6,8 @@ import { createAuthMiddleware } from "better-auth/api";
 import { getMigrations } from "better-auth/db/migration";
 import { anonymous, jwt } from "better-auth/plugins";
 import { DatabaseSync } from "node:sqlite";
+import { chmod, mkdir, open } from "node:fs/promises";
+import path from "node:path";
 import { AUTH_DATABASE, type AuthIdentity } from "./auth-store.ts";
 import { log } from "./logger.ts";
 
@@ -95,14 +97,14 @@ export async function createAuth(origin: string, identity: AuthIdentity, databas
       cimd({ fetchClientMetadataResource, metadataProfile: "mcp-2026-07-28" }),
     ],
   };
+  await mkdir(path.dirname(databaseFile), { recursive: true, mode: 0o700 });
+  const databaseHandle = await open(databaseFile, "a", 0o600);
+  await databaseHandle.close();
+  await chmod(databaseFile, 0o600);
   const database = new DatabaseSync(databaseFile);
   const authOptions = { ...options, database };
-  const version = (database.prepare("PRAGMA user_version").get() as { user_version: number }).user_version;
-  if (version < 1) {
-    const { runMigrations } = await getMigrations(authOptions);
-    await runMigrations();
-    database.exec("PRAGMA user_version = 1");
-  }
+  const { runMigrations } = await getMigrations(authOptions);
+  await runMigrations();
   const auth = betterAuth(authOptions);
   return { auth, issuer, resource };
 }

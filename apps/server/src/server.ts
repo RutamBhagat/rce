@@ -10,6 +10,7 @@ import type { RceConfig } from "./config.ts";
 import { consentHeaders, consentPage } from "./consent.ts";
 import { log } from "./logger.ts";
 import { createMcp } from "./mcp.ts";
+import { mcpAuthInfo } from "./mcp-auth.ts";
 import { consentBody, consentQuery } from "./oauth-schemas.ts";
 import { ROOT } from "./root.ts";
 
@@ -21,10 +22,11 @@ const consentCss = readFileSync(consentCssUrl, "utf8");
 export async function startServer(config: RceConfig): Promise<void> {
   const identity = await loadOrCreateAuthIdentity();
   const { auth, issuer, resource } = await createAuth(config.origin, identity);
-  const mcp = await createMcp(ROOT, config.origin, identity.profileId);
+  const mcp = await createMcp(ROOT, config.origin);
   const approvalCode = randomBytes(32).toString("hex").slice(0, 12).toUpperCase().match(/.{4}/g)!.join("-");
   const allowedHostnames = [issuer.hostname, "localhost", "127.0.0.1", "[::1]"];
-  const protectedMcp = requireMcpAuth(auth, (request) => mcp.fetch(request), {
+  const protectedMcp = requireMcpAuth(auth, (request, claims) =>
+    mcp.fetch(request, { authInfo: mcpAuthInfo(request, claims, resource, identity.secret) }), {
     resource: resource.href,
     requiredScopes: [SCOPE],
     // Keep JWKS discovery on loopback instead of sending cold-cache verification

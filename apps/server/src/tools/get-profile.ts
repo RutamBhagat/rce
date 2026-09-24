@@ -5,13 +5,13 @@ import type { ToolPlugin } from "./types.ts";
 const inputSchema = { type: "object", properties: {}, additionalProperties: false } as const;
 const outputSchema = {
   type: "object",
-  properties: { id: { type: "string" }, name: { type: "string" } },
+  properties: { id: { type: "string", minLength: 1, pattern: "\\S" }, name: { type: "string" } },
   required: ["id"],
   additionalProperties: false,
 } as const;
 
 export const getProfileTool: ToolPlugin = {
-  register(server, context) {
+  register(server, _context) {
     registerRceTool(server, "get_profile", {
       description: "Return the profile for this authenticated RCE connection.",
       inputSchema: fromJsonSchema<Record<string, never>>(inputSchema as JsonSchemaType),
@@ -23,8 +23,10 @@ export const getProfileTool: ToolPlugin = {
         openWorldHint: false,
       },
       _meta: { "openai/profile": true },
-    }, async () => {
-      const profile = { id: context.profileId, name: "RCE" };
+    }, async (_args, ctx) => {
+      const id = ctx.http?.authInfo?.extra?.profileId;
+      if (typeof id !== "string" || !id.trim()) throw new Error("Authenticated profile identity is unavailable");
+      const profile = { id, name: "RCE" };
       return { structuredContent: profile, content: [{ type: "text" as const, text: JSON.stringify(profile) }] };
     });
   },
