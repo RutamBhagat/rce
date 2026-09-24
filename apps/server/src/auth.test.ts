@@ -3,7 +3,7 @@ import { chmod, mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { createAuth } from "./auth.ts";
+import { createAuth, ensureAuthSchema } from "./auth.ts";
 import { loadOrCreateAuthIdentity, profileIdForSubject } from "./auth-store.ts";
 import { getProfileTool } from "./tools/get-profile.ts";
 
@@ -37,6 +37,29 @@ test("auth identity and session survive a server restart", async () => {
     await createAuth("http://127.0.0.1:6767", secondIdentity, databaseFile);
     assert.equal((await stat(databaseFile)).mode & 0o777, 0o600);
   } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("auth migrations run once per expected schema", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "rce-auth-migration-test-"));
+  const database = new (await import("node:sqlite")).DatabaseSync(path.join(directory, "auth.sqlite"));
+  let migrations = 0;
+  const migrate = async () => { migrations += 1; };
+  try {
+    const options = { database } as any;
+    assert.equal(await ensureAuthSchema(database, options, migrate), true);
+    assert.equal(await ensureAuthSchema(database, options, migrate), false);
+    assert.equal(migrations, 1);
+
+    const changedOptions = {
+      database,
+      user: { additionalFields: { handle: { type: "string", required: false } } },
+    } as any;
+    assert.equal(await ensureAuthSchema(database, changedOptions, migrate), true);
+    assert.equal(migrations, 2);
+  } finally {
+    database.close();
     await rm(directory, { recursive: true, force: true });
   }
 });

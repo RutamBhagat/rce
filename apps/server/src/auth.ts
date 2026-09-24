@@ -3,8 +3,10 @@ import { fetchClientMetadataResource } from "@better-auth/cimd/node";
 import { mcp } from "@better-auth/mcp";
 import { betterAuth } from "better-auth";
 import { createAuthMiddleware } from "better-auth/api";
+import { getSchema } from "better-auth/db";
 import { getMigrations } from "better-auth/db/migration";
 import { anonymous, jwt } from "better-auth/plugins";
+import { createHash } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { chmod, mkdir, open } from "node:fs/promises";
 import path from "node:path";
@@ -12,6 +14,58 @@ import { AUTH_DATABASE, type AuthIdentity } from "./auth-store.ts";
 import { log } from "./logger.ts";
 
 export const SCOPE = "mcp:tools";
+
+const AUTH_SCHEMA_KEY = "better-auth-schema";
+const SQLITE_ARRAY_TYPE_WARNING = /^Field .+ in table .+ has a different type in the database\. Expected (?:string|number)\[\] but got TEXT\.$/;
+
+function canonicalize(value: unknown): unknown {
+  if (typeof value === "function") return "[function]";
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value)
+      .filter(([, child]) => child !== undefined)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, child]) => [key, canonicalize(child)]));
+  }
+  return value;
+}
+
+function authSchemaFingerprint(options: any): string {
+  return createHash("sha256").update(JSON.stringify(canonicalize(getSchema(options)))).digest("hex");
+}
+
+export async function ensureAuthSchema(
+  database: DatabaseSync,
+  options: any,
+  migrate?: () => Promise<void>,
+): Promise<boolean> {
+  database.exec("CREATE TABLE IF NOT EXISTS rceAuthMetadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
+  const fingerprint = authSchemaFingerprint(options);
+  const stored = database.prepare("SELECT value FROM rceAuthMetadata WHERE key = ?").get(AUTH_SCHEMA_KEY) as { value: string } | undefined;
+  if (stored?.value === fingerprint) return false;
+
+  if (migrate) await migrate();
+  else {
+    const configuredLogger = options.logger;
+    const migrationOptions = {
+      ...options,
+      logger: {
+        ...configuredLogger,
+        log(level: "debug" | "info" | "warn" | "error", message: string, ...args: unknown[]) {
+          // Better Auth stores array fields as TEXT on SQLite but 1.7.2 warns that
+          // the resulting TEXT columns do not match its own string[]/number[] schema.
+          if (level === "warn" && SQLITE_ARRAY_TYPE_WARNING.test(message)) return;
+          configuredLogger?.log?.(level, message, ...args);
+        },
+      },
+    };
+    const { runMigrations } = await getMigrations(migrationOptions);
+    await runMigrations();
+  }
+
+  database.prepare("INSERT OR REPLACE INTO rceAuthMetadata (key, value) VALUES (?, ?)").run(AUTH_SCHEMA_KEY, fingerprint);
+  return true;
+}
 
 export async function createAuth(origin: string, identity: AuthIdentity, databaseFile = AUTH_DATABASE): Promise<{
   auth: any;
@@ -103,8 +157,7 @@ export async function createAuth(origin: string, identity: AuthIdentity, databas
   await chmod(databaseFile, 0o600);
   const database = new DatabaseSync(databaseFile);
   const authOptions = { ...options, database };
-  const { runMigrations } = await getMigrations(authOptions);
-  await runMigrations();
+  await ensureAuthSchema(database, authOptions);
   const auth = betterAuth(authOptions);
   return { auth, issuer, resource };
 }
