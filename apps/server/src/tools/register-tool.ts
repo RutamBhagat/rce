@@ -1,4 +1,5 @@
 import type { McpServer, ToolAnnotations } from "@modelcontextprotocol/server";
+import { allocateToolCallId, writeToolCall } from "../tool-call-log.ts";
 
 type RceToolAnnotations = ToolAnnotations & {
   readOnlyHint: boolean;
@@ -23,13 +24,27 @@ export function registerRceTool(
   handler: (args: any, ctx: any) => any,
 ): void {
   (server.registerTool as any)(name, config, async (args: any, ctx: any) => {
+    const callId = allocateToolCallId();
+    const started = performance.now();
+    writeToolCall({ id: callId, name, phase: "start", payload: args });
+
+    let result: any;
     try {
-      return await handler(args, ctx);
+      result = await handler(args, ctx);
     } catch (error) {
-      return {
+      result = {
         isError: true,
         content: [{ type: "text" as const, text: error instanceof Error ? error.message : String(error) }],
       };
     }
+
+    writeToolCall({
+      id: callId,
+      name,
+      phase: result?.isError === true ? "error" : "success",
+      elapsedMs: performance.now() - started,
+      payload: result,
+    });
+    return result;
   });
 }

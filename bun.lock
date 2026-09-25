@@ -12,7 +12,7 @@
     },
     "apps/server": {
       "name": "rce-mcp",
-      "version": "0.1.30",
+      "version": "0.1.31",
       "bin": {
         "rce": "dist/index.mjs",
       },
